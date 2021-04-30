@@ -2,13 +2,13 @@
 import cv2
 import numpy as np
 import rospy
-from tf import transformations
+from tf import transformations 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose
 
 class ArucoDetect:
-  def __init__(self):
+  def __init__(self, robot_id, cup_id):
 
     #create cv bridge instance
     self.cvBridge = CvBridge()
@@ -23,8 +23,10 @@ class ArucoDetect:
 
     #create aruco params
     self.aruco_param = cv2.aruco.DetectorParameters_create()
-    self.cam_matrix = np.array([[ 336.55058091,    0.,          357.41330531],[   0.,          376.22034138,  196.27284712],[   0.,            0.,            1.,        ]])
-    self.dist = np.array([[ 0.00571029,  0.00358575,  0.02551633, -0.01860799, -0.00833316]])
+    self.cam_matrix = np.array([[ 691.64109,    0.,          305.03735],[   0.,          695.32384,  296.75875],[   0.,            0.,            1.,        ]])
+    self.dist = np.array([[ 0.24028,   -0.68609,   0.01619,   -0.00456,  0.00000]])
+    self.cup_id = cup_id
+    self.robot_id = robot_id
 
 
   def image_callback(self, msg):
@@ -40,36 +42,55 @@ class ArucoDetect:
     
     # detect markers in vision
     bounding_boxes, ids, rejected_markers = cv2.aruco.detectMarkers(gs_image, self.aruco_dict, parameters=self.aruco_param)
-
-    #TODO format bounding boxes so only cup and robot are detected
     
     if ids is not None:
-      cv2.aruco.drawDetectedMarkers(gs_image,bounding_boxes)
-      cv2.imshow("image",gs_image)
+      cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
+      cv2.imshow("gs_image", gs_image)
       cv2.waitKey(1)
+      #TODO filter bounding boxes so only cup and robot are detected
+      index_of_robot = np.where(ids==self.robot_id)
+      index_of_cup = np.where(ids==self.cup_id)
+      important_bounding_boxes = [bounding_boxes[index_of_cup[0][0]], bounding_boxes[index_of_robot[0][0]]]
 
-      [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(bounding_boxes, 6, self.cam_matrix, self.dist)
-
-      #TODO get relative pose from robot to cup
+      # Determine marker poses
+      [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, 6, self.cam_matrix, self.dist)
 
       #TODO check that rotation and translation values are being set to correct axis
+      # Create cup transform matrix
+      cup_transform = transformations.quaternion_matrix(transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2]))
+      cup_transform[0][3] = tvecs[0][0][0]
+      cup_transform[1][3] = tvecs[0][0][1]
+      cup_transform[2][3] = tvecs[0][0][2]
+
+      #TODO check that rotation and translation values are being set to correct axis
+      # Create cup transform matrix
+      robot_transform = transformations.quaternion_matrix(transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2]))
+      robot_transform[0][3] = tvecs[1][0][0]
+      robot_transform[1][3] = tvecs[1][0][1]
+      robot_transform[2][3] = tvecs[1][0][2]
+
+      #get relative transform
+      relative_transform = np.matmul(np.linalg.inv(robot_transform),cup_transform)
+
+      #get relative quaternion
+      relative_q = transformations.quaternion_from_matrix(relative_transform)
+
       #get relative pose of robot base to cup
-      quaternion = transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2])
       pose_msg = Pose()
-      pose_msg.orientation.x = quaternion[0]
-      pose_msg.orientation.y = quaternion[1]
-      pose_msg.orientation.z = quaternion[2]
-      pose_msg.orientation.w = quaternion[3]
-      pose_msg.position.x = tvecs[0][0][0]
-      pose_msg.position.y = tvecs[0][0][1]
-      pose_msg.position.z = tvecs[0][0]`[2]
+      pose_msg.orientation.x = relative_q[0]
+      pose_msg.orientation.y = relative_q[1]
+      pose_msg.orientation.z = relative_q[2]
+      pose_msg.orientation.w = relative_q[3]
+      pose_msg.position.x = relative_transform[0][3]
+      pose_msg.position.y = relative_transform[1][3]
+      pose_msg.position.z = relative_transform[2][3]
       #publish cup pose
       self.cup_pose_pub.publish(pose_msg)
 
 
 if __name__ == '__main__':
   rospy.init_node('cup_detector')
-  cupDetector = ArucoDetect()
+  cupDetector = ArucoDetect(5,5)
 
   while not rospy.is_shutdown():
     rospy.spin()
