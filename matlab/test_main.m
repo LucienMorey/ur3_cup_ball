@@ -1,12 +1,13 @@
+clear;clc;
+rosshutdown;
+
 rosinit('192.168.0.253'); % Assuming a UTS Pi, otherwise please change this
-jointStateSubscriber = rossubscriber('joint_states','sensor_msgs/JointState');
-%%
 jointStateSubscriber = rossubscriber('joint_states','sensor_msgs/JointState');
 pause(2); % Pause to give time for a message to appear
 currentJointState_321456 = (jointStateSubscriber.LatestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
 currentJointState_123456 = [currentJointState_321456(3:-1:1),currentJointState_321456(4:6)];
-%%
-jointStateSubscriber.LatestMessage
+
+jointStateSubscriber.LatestMessage;
 
 jointNames = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
 
@@ -19,15 +20,26 @@ bufferSeconds = 1; % This allows for the time taken to send the message. If the 
 durationSeconds = 5; % This is how many seconds the movement will take
 
 startJointSend = rosmessage('trajectory_msgs/JointTrajectoryPoint');
-startJointSend.Positions = currentJointState_123456;
+startJointSend.Positions = [0,0,0,-pi/2,0,0];
 startJointSend.TimeFromStart = rosduration(0);     
       
-endJointSend = rosmessage('trajectory_msgs/JointTrajectoryPoint');
-nextJointState_123456 = currentJointState_123456 + [pi/8,0,0,0,0,pi/8];
-endJointSend.Positions = nextJointState_123456;
-endJointSend.TimeFromStart = rosduration(durationSeconds);
 
-goal.Trajectory.Points = [startJointSend; endJointSend];
+secondJointSend = rosmessage('trajectory_msgs/JointTrajectoryPoint');
+secondJointSend.Positions = [0,-pi/2,0,-pi/2,0,0];
+secondJointSend.Velocities = [0,0,0,0,0,0];
+secondJointSend.TimeFromStart = rosduration(0.5);
+
+endJointSend = rosmessage('trajectory_msgs/JointTrajectoryPoint');
+finalJointState_123456 = [0,-pi,0,-pi/2,0,0];
+endJointSend.Positions = finalJointState_123456;
+endJointSend.TimeFromStart = rosduration(2);
+
+goal.Trajectory.Points = [startJointSend; secondJointSend; endJointSend];
+%%
+disp('penis');
 
 goal.Trajectory.Header.Stamp = jointStateSubscriber.LatestMessage.Header.Stamp + rosduration(bufferSeconds);
+disp('big penis')
+pause(1)
 sendGoal(client,goal);
+disp('donger');
