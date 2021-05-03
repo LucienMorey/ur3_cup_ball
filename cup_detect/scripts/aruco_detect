@@ -39,7 +39,7 @@ class ArucoDetect:
     try:
       cv_image = self.cvBridge.imgmsg_to_cv2(msg)
     except CvBridgeError:
-      print('fail to convert to cv2 image')
+      print('fail to convert to ros message to cv2 image')
 
 
     # convert image to graysecale
@@ -50,8 +50,11 @@ class ArucoDetect:
     
     # publish image with detected markers for debugging
     cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
-    img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
-    self.bounding_image_pub.publish(img_msg)
+    try:
+      img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
+      self.bounding_image_pub.publish(img_msg)
+    except CvBridgeError:
+      print('failed to convert cv2 image to ros message')
 
     # check if the required AR Tags can be seen
     if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
