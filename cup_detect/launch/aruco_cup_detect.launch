@@ -1,0 +1,38 @@
+<launch>
+
+    <arg name="detection_cam_name" default="detection_cam"/>
+
+    <arg name="cup_ar_cup_x" default="0.0"/>
+    <arg name="cup_ar_cup_y" default="0.0"/>
+    <arg name="cup_ar_cup_z" default="0.0"/>
+
+    <arg name="cup_ar_cup_qx" default="0.0"/>
+    <arg name="cup_ar_cup_qy" default="0.0"/>
+    <arg name="cup_ar_cup_qz" default="0.0"/>
+    <arg name="cup_ar_cup_qw" default="1.0"/>
+
+    <arg name="robot_ar_robot_x" default="0.0"/>
+    <arg name="robot_ar_robot_y" default="0.0"/>
+    <arg name="robot_ar_robot_z" default="0.0"/>
+
+    <arg name="robot_ar_robot_qx" default="0.0"/>
+    <arg name="robot_ar_robot_qy" default="0.0"/>
+    <arg name="robot_ar_robot_qz" default="0.0"/>
+    <arg name="robot_ar_robot_qw" default="1.0"/>
+
+    <!-- start usb cam node -->
+    <node pkg="usb_cam" type="usb_cam_node" name="$(arg detection_cam_name)"/>
+    
+    <!-- start cup detect node  -->
+    <node pkg="cup_detect" type="aruco_detect" name="aruco_detector">
+        <remap from="/image" to="$(arg detection_cam_name)/image_raw"/>
+    </node>
+
+    <!-- broadcast transform from cup_ar to cup -->
+    <node pkg="tf" type="static_transform_publisher" name="cup_broadcaster" args="$(arg cup_ar_cup_x) $(arg cup_ar_cup_y) $(arg cup_ar_cup_z) $(arg cup_ar_cup_qx) $(arg cup_ar_cup_qy) $(arg cup_ar_cup_qz) $(arg cup_ar_cup_qw) cup_ar_marker cup 33" />
+
+
+    <!-- broadcast transform from robot_ar to robot -->
+    <node pkg="tf" type="static_transform_publisher" name="robot_broadcaster" args="$(arg robot_ar_robot_x) $(arg robot_ar_robot_y) $(arg robot_ar_robot_z) $(arg robot_ar_robot_qx) $(arg robot_ar_robot_qy) $(arg robot_ar_robot_qz) $(arg robot_ar_robot_qw) robot_ar_marker robot 33"/>
+
+</launch>
