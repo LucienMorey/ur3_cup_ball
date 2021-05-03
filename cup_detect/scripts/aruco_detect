@@ -35,73 +35,73 @@ class ArucoDetect:
 
 
   def image_callback(self, msg):
-    # convert image to cv
+    # try to convert image to cv
     try:
       cv_image = self.cvBridge.imgmsg_to_cv2(msg)
+
+      # convert image to graysecale
+      gs_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2GRAY)
+      
+      # detect markers in vision
+      bounding_boxes, ids, _ = cv2.aruco.detectMarkers(gs_image, self.aruco_dict, parameters=self.aruco_param)
+      
+      # publish image with detected markers for debugging
+      cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
+      try:
+        img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
+        self.bounding_image_pub.publish(img_msg)
+      except CvBridgeError:
+        print('failed to convert cv2 image to ros message')
+
+      # check if the required AR Tags can be seen once
+      if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
+
+        # get index value of robot
+        index_of_robot = np.where(ids==self.robot_id)[0][0]
+
+        #get index value of cup
+        index_of_cup = np.where(ids==self.cup_id)[0][0]
+
+        # limit to important bounding boxes
+        important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
+
+        # Determine marker poses
+        [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, 6, self.cam_matrix, self.dist)
+
+        # broadcast tf from camera frame to cup_ar_tag
+        #TODO check that rotation and translation values are being set to correct axis
+        cup_ar_transform = TransformStamped()
+        cup_ar_transform.header.stamp = rospy.Time.now()
+        cup_ar_transform.header.frame_id = msg.header.frame_id
+        cup_ar_transform.child_frame_id = "cup_ar_marker"
+        cup_ar_transform.transform.translation.x = tvecs[0][0][0]
+        cup_ar_transform.transform.translation.y = tvecs[0][0][1]
+        cup_ar_transform.transform.translation.z = tvecs[0][0][2]
+        q = transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2])
+        cup_ar_transform.transform.rotation.x = q[0]
+        cup_ar_transform.transform.rotation.y = q[1]
+        cup_ar_transform.transform.rotation.z = q[2]
+        cup_ar_transform.transform.rotation.w = q[3]
+        self.tfBroadcaster.sendTransform(cup_ar_transform)
+
+        # broadcast tf from camera frame to robot_ar_tag
+        #TODO check that rotation and translation values are being set to correct axis
+        robot_ar_transform = TransformStamped()
+        robot_ar_transform.header.stamp = rospy.Time.now()
+        robot_ar_transform.header.frame_id = msg.header.frame_id
+        robot_ar_transform.child_frame_id = "robot_ar_marker"
+        robot_ar_transform.transform.translation.x = tvecs[1][0][0]
+        robot_ar_transform.transform.translation.y = tvecs[1][0][1]
+        robot_ar_transform.transform.translation.z = tvecs[1][0][2]
+        q = transformations.quaternion_from_euler(rvecs[1][0][0], rvecs[1][0][1], rvecs[1][0][2])
+        robot_ar_transform.transform.rotation.x = q[0]
+        robot_ar_transform.transform.rotation.y = q[1]
+        robot_ar_transform.transform.rotation.z = q[2]
+        robot_ar_transform.transform.rotation.w = q[3]
+        self.tfBroadcaster.sendTransform(robot_ar_transform)
     except CvBridgeError:
       print('fail to convert to ros message to cv2 image')
 
-
-    # convert image to graysecale
-    gs_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2GRAY)
-    
-    # detect markers in vision
-    bounding_boxes, ids, _ = cv2.aruco.detectMarkers(gs_image, self.aruco_dict, parameters=self.aruco_param)
-    
-    # publish image with detected markers for debugging
-    cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
-    try:
-      img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
-      self.bounding_image_pub.publish(img_msg)
-    except CvBridgeError:
-      print('failed to convert cv2 image to ros message')
-
-    # check if the required AR Tags can be seen
-    if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
-
-      # get index value of robot
-      index_of_robot = np.where(ids==self.robot_id)[0][0]
-
-      #get index value of cup
-      index_of_cup = np.where(ids==self.cup_id)[0][0]
-
-      # limit to important bounding boxes
-      important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
-
-      # Determine marker poses
-      [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, 6, self.cam_matrix, self.dist)
-
-      # broadcast tf from camera frame to cup_ar_tag
-      #TODO check that rotation and translation values are being set to correct axis
-      cup_ar_transform = TransformStamped()
-      cup_ar_transform.header.stamp = rospy.Time.now()
-      cup_ar_transform.header.frame_id = msg.header.frame_id
-      cup_ar_transform.child_frame_id = "cup_ar_marker"
-      cup_ar_transform.transform.translation.x = tvecs[0][0][0]
-      cup_ar_transform.transform.translation.y = tvecs[0][0][1]
-      cup_ar_transform.transform.translation.z = tvecs[0][0][2]
-      q = transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2])
-      cup_ar_transform.transform.rotation.x = q[0]
-      cup_ar_transform.transform.rotation.y = q[1]
-      cup_ar_transform.transform.rotation.z = q[2]
-      cup_ar_transform.transform.rotation.w = q[3]
-      self.tfBroadcaster.sendTransform(cup_ar_transform)
-
-      # broadcast tf from camera frame to robot_ar_tag
-      #TODO check that rotation and translation values are being set to correct axis
-      robot_ar_transform = TransformStamped()
-      robot_ar_transform.header.stamp = rospy.Time.now()
-      robot_ar_transform.header.frame_id = msg.header.frame_id
-      robot_ar_transform.child_frame_id = "robot_ar_marker"
-      robot_ar_transform.transform.translation.x = tvecs[1][0][0]
-      robot_ar_transform.transform.translation.y = tvecs[1][0][1]
-      robot_ar_transform.transform.translation.z = tvecs[1][0][2]
-      q = transformations.quaternion_from_euler(rvecs[1][0][0], rvecs[1][0][1], rvecs[1][0][2])
-      robot_ar_transform.transform.rotation.x = q[0]
-      robot_ar_transform.transform.rotation.y = q[1]
-      robot_ar_transform.transform.rotation.z = q[2]
-      robot_ar_transform.transform.rotation.w = q[3]
-      self.tfBroadcaster.sendTransform(robot_ar_transform)
 
 
 if __name__ == '__main__':
