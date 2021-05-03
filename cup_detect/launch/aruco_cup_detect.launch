@@ -1,0 +1,9 @@
+<launch>
+
+    <!-- start usb cam node -->
+    <node pkg="usb_cam" type="usb_cam_node" name="detection_cam"/>
+    
+    <!-- start cup detect node  -->
+    <node pkg="cup_detect" type="aruco_detect" name="aruco_detector"/>
+
+</launch>
