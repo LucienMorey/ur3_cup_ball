@@ -18,6 +18,10 @@ class ArucoDetect:
     
     #create pose pub
     self.cup_pose_pub = rospy.Publisher('pose_data', Pose, queue_size=1)
+
+    #create bounding box image pub
+    self.bounding_image_pub = rospy.Publisher('/bounding_image', Image, queue_size=1)
+
     #load aruco marker dictionary
     self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
 
@@ -38,19 +42,27 @@ class ArucoDetect:
 
 
     # convert image to graysecale
-    gs_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+    gs_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2GRAY)
     
     # detect markers in vision
     bounding_boxes, ids, rejected_markers = cv2.aruco.detectMarkers(gs_image, self.aruco_dict, parameters=self.aruco_param)
     
-    if ids is not None:
-      cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
-      cv2.imshow("gs_image", gs_image)
-      cv2.waitKey(1)
-      #TODO filter bounding boxes so only cup and robot are detected
-      index_of_robot = np.where(ids==self.robot_id)
-      index_of_cup = np.where(ids==self.cup_id)
-      important_bounding_boxes = [bounding_boxes[index_of_cup[0][0]], bounding_boxes[index_of_robot[0][0]]]
+    # publish image with detected markers for debugging
+    cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
+    img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
+    self.bounding_image_pub.publish(img_msg)
+
+    # check if the required AR Tags can be seen
+    if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
+
+      # get index value of robot
+      index_of_robot = np.where(ids==self.robot_id)[0][0]
+
+      #get index value of cup
+      index_of_cup = np.where(ids==self.cup_id)[0][0]
+
+      # limit to important bounding boxes
+      important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
 
       # Determine marker poses
       [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, 6, self.cam_matrix, self.dist)
@@ -90,7 +102,7 @@ class ArucoDetect:
 
 if __name__ == '__main__':
   rospy.init_node('cup_detector')
-  cupDetector = ArucoDetect(5,5)
+  cupDetector = ArucoDetect(5,7)
 
   while not rospy.is_shutdown():
     rospy.spin()
