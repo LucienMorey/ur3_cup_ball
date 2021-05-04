@@ -78,17 +78,18 @@ classdef TrajectoryGenerator < handle
             % Preallocate return arrays  
             qMatrix = zeros(obj.STEPS, obj.robot.n);
             vMatrix = zeros(obj.STEPS, obj.robot.n);
-            tMatrix = zeros(obj.STEPS);
+            tMatrix = zeros(1, obj.STEPS);
             
             %determine time delta for segments
             segDist = sqrt(sum(sum((endPoint(1:3,4) - startPoint(1:3,4)).^2)));
-            segTime = segDist/desiredVelocity;
+            velocityMagnitude = sqrt(sum(sum(desiredVelocity.^2)));
+            segTime = segDist/velocityMagnitude;
             deltaT = segTime/obj.STEPS;
             
             % populate segment time array 
             tMatrix(1) = segmentStartTime;
             for i=2:1:obj.STEPS
-                tMatrix(i) = tMatrix(i-1) + deltaT;
+                tMatrix(1, i) = tMatrix(1, i-1) + deltaT;
             end
 
             % break up traj segment into cartesian point array of size steps
