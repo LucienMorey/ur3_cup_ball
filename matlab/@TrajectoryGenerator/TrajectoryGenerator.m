@@ -182,7 +182,7 @@ classdef TrajectoryGenerator < handle
 
             %interpolate translation
             for i=2:1:obj.STEPS
-                xMatrix(:,i) = x(:,i-1) + (velocityMagnitude*deltaT)*velocityDirection;
+                xMatrix(:,i) = xMatrix(:,i-1) + (velocityMagnitude*deltaT)*velocityDirection;
             end
 
             % determine orientation of velocity vector
