@@ -63,9 +63,9 @@ classdef TrajectoryGenerator < handle
             for i=1:1:size(cartesianTrajectory,3) - 1
                 % get matrices from interpolator
                 if size(tMatrix,1) == 0
-                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0);
+                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0, zeros(1,6));
                 else
-                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end));
+                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end),qMatrix(end,:));
                 end
 
                 % concatinate matrices
@@ -76,7 +76,7 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, desiredVelocity, segmentStartTime)
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, desiredVelocity, segmentStartTime, jointSeed)
             % Preallocate return arrays  
             qMatrix = zeros(obj.STEPS, obj.robot.n);
             vMatrix = zeros(obj.STEPS, obj.robot.n);
@@ -101,12 +101,9 @@ classdef TrajectoryGenerator < handle
             % get transform of first point
             T =  [rpy2r(theta(1,1), theta(2,1), theta(3,1)) x(:,1);zeros(1,3) 1];
             obj.orientation = cat(3, obj.orientation, T);
-            % estimation for initial joint state
-            % TODO find method for better starting estimate
-            q0 = zeros(1,6);
 
             % initial joint state
-            qMatrix(1,:) = obj.robot.ikcon(T,q0);
+            qMatrix(1,:) = obj.robot.ikcon(T,jointSeed);
 
             % create joint state traj
             for i=1:1:obj.STEPS-1
