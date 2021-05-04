@@ -46,8 +46,8 @@ classdef TrajectoryGenerator < handle
 
             % project along velocity vector to find start and stop locations of throw
             velocityDirection = velocityVector./velocityMagnitude;
-            pStart = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)];
-            pEnd = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)]; 
+            pStart = obj.throwPosition + [zeros(3,3), (-1 * obj.preThrowDistance) .* velocityDirection; zeros(1,4)];
+            pEnd = obj.throwPosition + [zeros(3,3), obj.postThrowDistance .* velocityDirection; zeros(1,4)]; 
             
             %concatinate all points in trajectory
             cartesianTrajectory = zeros(4,4,5);
