@@ -37,23 +37,39 @@ classdef TrajectoryGenerator < handle
         end
         
         function [qMatrix,vMatrix, tMatrix] = GenerateTrajectory(obj, velocityVector)
+            qMatrix = [];
+            vMatrix = [];
+            tMatrix = [];
+            
             % determine velocity magnitude
             velocityMagnitude = sqrt(sum(sum(velocityVector.^2)));
 
             % project along velocity vector to find start and stop locations of throw
             velocityDirection = velocityVector./velocityMagnitude;
-            p_start = obj.throwPosition + -1 * velocityDirection * obj.preThrowDistance;
-            p_end = obj.throwPosition + velocityDirection * obj.postThrowDistance; 
+            p_start = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)];
+            p_end = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)]; 
             
             %concatinate all points in trajectory
-            %TODO ensure all points are in tf matrix form
-            cartesian_trajectory = [obj.reloadLocation; p_start; obj.throwPosition; p_end; obj.reloadLocation]
+            cartesianTrajectory = zeros(4,4,5);
+            cartesianTrajectory(:,:,1) = obj.reloadLocation;
+            cartesianTrajectory(:,:,2) = pStart;
+            cartesianTrajectory(:,:,3) = obj.throwPosition;
+            cartesianTrajectory(:,:,4) = p_end;
+            cartesianTrajectory(:,:,5) = obj.reloadLocation;
 
             % interpolate RMRC segment for each cartesian trajectory segment
-            for i=1:1:size(cartesian_trajectory,3) - 1
+            for i=1:1:size(cartesianTrajectory,3) - 1
                 % get matrices from interpolator
+                if size(tMatrix,1) == 0
+                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0);
+                else
+                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end));
+                end
 
                 % concatinate matrices
+                qMatrix = [qMatrix; segmentQMatrix];
+                vMatrix = [vMatrix; segmentVMatrix];
+                tMatrix = [tMatrix, segmentTMatrix];
             end
 
         end
