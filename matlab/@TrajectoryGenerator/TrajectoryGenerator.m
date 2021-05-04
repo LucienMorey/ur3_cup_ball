@@ -120,13 +120,13 @@ classdef TrajectoryGenerator < handle
                 currentR = currentT(1:3,1:3);
 
                 % determine future rotation matrix
-                nextR = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1))
+                nextR = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));
 
                 % determine rotation change over time
                 deltaR = (1/deltaT)*(nextR - currentR);
 
                 % skew the matrix and determine the angular velocity
-                S = deltaR*currentR'
+                S = deltaR*currentR';
                 angularVelocity = [S(3,2);S(1,3);S(2,1)];
                 % concatinate velocity vectors and scale
                 cartesianVelocity = obj.VELOCITY_WEIGHTING * [linearVelocity; angularVelocity];
@@ -150,7 +150,7 @@ classdef TrajectoryGenerator < handle
                 invJ = inv(J'*J + lambda *eye(6))*J';
 
                 % determine joint velocities
-                vMatrix(i,:) = invJ*cartesianVelocity
+                vMatrix(i,:) = invJ*cartesianVelocity;
 
                 % check if expected to exceed joint limits
                 for j=1:1:obj.robot.n % Loop through joints 1 to 6
