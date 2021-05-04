@@ -8,12 +8,14 @@ classdef TrajectoryGenerator < handle
         preThrowDistance;
         postThrowDistance;
         reloadLocation
+        traj;
+        orientation;
     end
 
     properties(Constant)
         EPSILON = 0.1;
         VELOCITY_WEIGHTING = diag([1,1,1,0.1,0.1,0.1]);
-        STEPS = 200;
+        STEPS = 20;
     end
     
     methods
@@ -94,9 +96,11 @@ classdef TrajectoryGenerator < handle
 
             % break up traj segment into cartesian point array of size steps
             [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
+            obj.traj = [obj.traj, x];
             
             % get transform of first point
             T =  [rpy2r(theta(1,1), theta(2,1), theta(3,1)) x(:,1);zeros(1,3) 1];
+            obj.orientation = cat(3, obj.orientation, T);
             % estimation for initial joint state
             % TODO find method for better starting estimate
             q0 = zeros(1,6);
