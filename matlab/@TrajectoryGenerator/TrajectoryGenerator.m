@@ -186,7 +186,7 @@ classdef TrajectoryGenerator < handle
             end
 
             % determine orientation of velocity vector
-            rpy = tr2rpy(segmentStart)
+            rpy = tr2rpy(segmentStart)';
 
             % assume constant orientation
             thetaMatrix = rpy .* ones(3,obj.STEPS);
