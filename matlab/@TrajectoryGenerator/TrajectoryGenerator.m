@@ -58,7 +58,7 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, startTime, desiredVelocity, segmentStartTime)
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, desiredVelocity, segmentStartTime)
             % Preallocate return arrays  
             qMatrix = zeros(obj.STEPS, obj.robot.n);
             vMatrix = zeros(obj.STEPS, obj.robot.n);
