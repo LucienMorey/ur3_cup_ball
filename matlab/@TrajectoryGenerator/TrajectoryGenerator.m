@@ -111,7 +111,7 @@ classdef TrajectoryGenerator < handle
                 currentT = obj.robot.fkine(qMatrix(i,:));
 
                 % determine the position delta to the next traj point
-                deltaX = x(:,i+1) - T(1:3,4);
+                deltaX = x(:,i+1) - currentT(1:3,4);
 
                 % determine linear velocity for this timestep
                 linearVelocity = (1/deltaT)*deltaX;
