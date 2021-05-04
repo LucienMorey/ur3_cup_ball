@@ -57,18 +57,36 @@ classdef TrajectoryGenerator < handle
             end
 
         end
+
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, startTime, desiredVelocity, segmentStartTime)
+            % Preallocate return arrays  
+            qMatrix = zeros(obj.STEPS, obj.robot.n);
+            vMatrix = zeros(obj.STEPS, obj.robot.n);
+            tMatrix = zeros(obj.STEPS);
             
+            %determine time delta for segments
+            segDist = sqrt(sum(sum((endPoint(1:3,4) - startPoint(1:3,4)).^2)));
+            segTime = segDist/desiredVelocity;
+            deltaT = segTime/obj.STEPS;
+            
+            % populate segment time array 
+            tMatrix(1) = segmentStartTime;
+            for i=2:1:obj.STEPS
+                tMatrix(i) = tMatrix(i-1) + deltaT;
+            end
 
-        end
-
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, startTime, desiredVelocity, segmentTime)
             % break up traj segment into cartesian point array of size steps
+            [x,theta] = obj.interpolateSegment(startPoint,endPoint,desiredVelocity,deltaT);
 
             % get transform of first point
+            T =  [rpy2r(theta(1,1), theta(1,2), theta(1,2)) x(:,1);zeros(1,3) 1];
             
             % estimation for initial joint state
+            % TODO find method for better starting estimate
+            q0 = zeros(1,6);
 
             % initial joint state
+            qMatrix(1,:) = robot.ikcon(T,q0);
 
             % create joint state traj
             for i=1:1:obj.STEPS
