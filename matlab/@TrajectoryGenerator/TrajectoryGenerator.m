@@ -89,7 +89,7 @@ classdef TrajectoryGenerator < handle
             qMatrix(1,:) = robot.ikcon(T,q0);
 
             % create joint state traj
-            for i=1:1:obj.STEPS
+            for i=1:1:obj.STEPS-1
                 % determine forward kinematics solution of current joint states
 
                 % determine the position delta to the next traj point
