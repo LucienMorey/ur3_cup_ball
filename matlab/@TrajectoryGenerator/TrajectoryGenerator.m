@@ -46,30 +46,17 @@ classdef TrajectoryGenerator < handle
             p_end = obj.throwPosition + velocityDirection * obj.postThrowDistance; 
             
             %concatinate all points in trajectory
+            %TODO ensure all points are in tf matrix form
             cartesian_trajectory = [obj.reloadLocation; p_start; obj.throwPosition; p_end; obj.reloadLocation]
-            qMatrix = [obj.robot.ikcon(transl(obj.reloadLocation(1,1), obj.reloadLocation(1,2), obj.reloadLocation(1,3)))];
-            vMatrix = [];
 
-            for steps = 1:1:size(cartesian_trajectory,1)-1
-                % calculate the time delta between current and next step
-                timeDelta = obj.CalculateTimeDelta(cartesian_trajectory(steps,:), cartesian_trajectory(steps+1,:),velocityMagnitude);
-                % calculate velocity vector 
-                cartesian_vel = (cartesian_trajectory(steps+1,:) - cartesian_trajectory(steps,:))./timeDelta;
-                cartesian_vel = [cartesian_vel,0,0,0];
-                % determine the jacobian
-                J = obj.robot.jacob0(qMatrix(1,:));
-                % determine the measure of manipulibiility
-                measureOfManipulibility = sqrt(det(J*J'));
-                % solve for joint velocities
-                if measureOfManipulibility < obj.minManipMeasure
-                    qdot = inv(J'*J + 0.01*eye(6))*J'*cartesian_vel';
-                else
-                    qdot = inv(J) * cartesian_vel'; % Solvevelocitities via RMRC    
-                end
-                % back subsitute for the qMatrix
-                vMatrix = [vMatrix; qdot'];
-                qMatrix(steps+1,:) = qMatrix(steps,:) + timeDelta * qdot';
+            % interpolate RMRC segment for each cartesian trajectory segment
+            for i=1:1:size(cartesian_trajectory,3) - 1
+                % get matrices from interpolator
+
+                % concatinate matrices
             end
+
+        end
             vMatrix = [vMatrix; zeros(1,6)];
             
 
