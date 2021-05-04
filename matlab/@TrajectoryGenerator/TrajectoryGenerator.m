@@ -57,7 +57,6 @@ classdef TrajectoryGenerator < handle
             end
 
         end
-            vMatrix = [vMatrix; zeros(1,6)];
             
 
         end
@@ -115,8 +114,29 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function timeDelta = CalculateTimeDelta(obj, p1, p2, desiredVelocity)
-            timeDelta = sqrt(sum((((p2-p1)./desiredVelocity).^2)));
+        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityVector, deltaT)
+            % determine velocity magnitude
+            velocityMagnitude = sqrt(sum(sum(velocityVector.^2)));
+
+            % project along velocity vector to find start and stop locations of throw
+            velocityDirection = velocityVector./velocityMagnitude;
+
+            % preallocate cartesian point sizes
+            xMatrix = zeros(3,obj.STEPS);      
+
+            % grab the translation components from the tf
+            xMatrix(:,1) = segmentStart(1:3,4);
+
+            %interpolate translation
+            for i=2:1:obj.STEPS
+                xMatrix(:,i) = x(:,i-1) + (velocityMagnitude*deltaT)*velocityDirection;
+            end
+
+            % determine orientation of velocity vector
+            rpy = tr2rpy(segmentStart)
+
+            % assume constant orientation
+            thetaMatrix = rpy .* ones(3,obj.STEPS);
         end
     end
 end
