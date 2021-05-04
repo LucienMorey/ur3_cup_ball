@@ -119,7 +119,7 @@ classdef TrajectoryGenerator < handle
                 currentR = currentT(1:3,1:3);
 
                 % determine future rotation matrix
-                nextR = rpy2r=(theta(1,i+1),theta(2,i+1),theta(3,i+1))
+                nextR = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1))
 
                 % determine rotation change over time
                 deltaR = (1/deltaT)*(nextR - currentR);
