@@ -93,11 +93,10 @@ classdef TrajectoryGenerator < handle
             end
 
             % break up traj segment into cartesian point array of size steps
-            [x,theta] = obj.interpolateSegment(startPoint,endPoint,desiredVelocity,deltaT);
-
-            % get transform of first point
-            T =  [rpy2r(theta(1,1), theta(1,2), theta(1,2)) x(:,1);zeros(1,3) 1];
+            [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
             
+            % get transform of first point
+            T =  [rpy2r(theta(1,1), theta(2,1), theta(3,1)) x(:,1);zeros(1,3) 1];
             % estimation for initial joint state
             % TODO find method for better starting estimate
             q0 = zeros(1,6);
@@ -167,12 +166,13 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityVector, deltaT)
-            % determine velocity magnitude
-            velocityMagnitude = sqrt(sum(sum(velocityVector.^2)));
-
-            % project along velocity vector to find start and stop locations of throw
-            velocityDirection = velocityVector./velocityMagnitude;
+        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
+            seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
+            % determine segment
+            segMagnitude = sqrt(sum(sum(seg.^2)));
+            
+            % determine directional unit vector of segment
+            segDirection = seg./segMagnitude;
 
             % preallocate cartesian point sizes
             xMatrix = zeros(3,obj.STEPS);      
@@ -182,14 +182,24 @@ classdef TrajectoryGenerator < handle
 
             %interpolate translation
             for i=2:1:obj.STEPS
-                xMatrix(:,i) = xMatrix(:,i-1) + (velocityMagnitude*deltaT)*velocityDirection;
+                xMatrix(:,i) = xMatrix(:,i-1) + (velocityMagnitude*deltaT)*segDirection;
             end
 
-            % determine orientation of velocity vector
-            rpy = tr2rpy(segmentStart)';
+            % determine orientation of velocity vector wiht double cross
+            %z direction is along the line of travel
+            z_local = segDirection;
+            
+            % arbitrary y is determined by taking the cross product of local z and the global z;
+            y_local = cross(z_local, [0; 0; 1]);
+            
+            % subsequent x vector can be found with the cross from y to z local
+            x_local = cross(y_local, z_local);
+            
+            % determine rpy from rotation matrix
+            rpy = tr2rpy([x_local, y_local, z_local]);
 
             % assume constant orientation
-            thetaMatrix = rpy .* ones(3,obj.STEPS);
+            thetaMatrix = rpy' .* ones(3,obj.STEPS);
         end
     end
 end
