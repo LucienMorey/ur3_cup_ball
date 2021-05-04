@@ -103,12 +103,12 @@ classdef TrajectoryGenerator < handle
             q0 = zeros(1,6);
 
             % initial joint state
-            qMatrix(1,:) = robot.ikcon(T,q0);
+            qMatrix(1,:) = obj.robot.ikcon(T,q0);
 
             % create joint state traj
             for i=1:1:obj.STEPS-1
                 % determine forward kinematics solution of current joint states
-                currentT = robot.fkine(qMatrix(i,:));
+                currentT = obj.robot.fkine(qMatrix(i,:));
 
                 % determine the position delta to the next traj point
                 deltaX = x(:,i+1) - T(1:3,4);
@@ -132,7 +132,7 @@ classdef TrajectoryGenerator < handle
                 cartesianVelocity = obj.VELOCITY_WEIGHTING * [linearVelocity; angularVelocity];
 
                 % determine the current jacobian
-                J = robot.jacob0(qMatrix(i,:));
+                J = obj.robot.jacob0(qMatrix(i,:));
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
@@ -153,10 +153,10 @@ classdef TrajectoryGenerator < handle
                 vMatrix(i,:) = invJ*cartesianVelocity
 
                 % check if expected to exceed joint limits
-                for j=1:1:robot.n % Loop through joints 1 to 6
-                    if qMatrix(i,j) + deltaT*vMatrix(i,j) < robot.qlim(j,1) % If next joint angle is lower than joint limit...
+                for j=1:1:obj.robot.n % Loop through joints 1 to 6
+                    if qMatrix(i,j) + deltaT*vMatrix(i,j) < obj.robot.qlim(j,1) % If next joint angle is lower than joint limit...
                         vMatrix(i,j) = 0;  % Stop the motor
-                    elseif qMatrix(i,j) + deltaT*qdot(i,j) > p560.qlim(j,2) % If next joint angle is greater than joint limit ...
+                    elseif qMatrix(i,j) + deltaT*vMatrix(i,j) > obj.robot.qlim(j,2) % If next joint angle is greater than joint limit ...
                         vMatrix(i,j) = 0; % Stop the motor
                     end
                 end
