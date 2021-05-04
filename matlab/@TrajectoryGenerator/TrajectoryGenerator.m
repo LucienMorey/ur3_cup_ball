@@ -46,15 +46,15 @@ classdef TrajectoryGenerator < handle
 
             % project along velocity vector to find start and stop locations of throw
             velocityDirection = velocityVector./velocityMagnitude;
-            p_start = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)];
-            p_end = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)]; 
+            pStart = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)];
+            pEnd = obj.throwPosition + [zeros(3,3), -1 * velocityDirection * obj.preThrowDistance; zeros(1,4)]; 
             
             %concatinate all points in trajectory
             cartesianTrajectory = zeros(4,4,5);
             cartesianTrajectory(:,:,1) = obj.reloadLocation;
             cartesianTrajectory(:,:,2) = pStart;
             cartesianTrajectory(:,:,3) = obj.throwPosition;
-            cartesianTrajectory(:,:,4) = p_end;
+            cartesianTrajectory(:,:,4) = pEnd;
             cartesianTrajectory(:,:,5) = obj.reloadLocation;
 
             % interpolate RMRC segment for each cartesian trajectory segment
