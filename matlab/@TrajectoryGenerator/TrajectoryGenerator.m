@@ -13,8 +13,8 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 0.1;
-        VELOCITY_WEIGHTING = diag([1,1,1,0.1,0.1,0.1]);
+        EPSILON = 1.0;
+        VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
         STEPS = 20;
     end
     
