@@ -52,78 +52,98 @@ classdef TrajectoryGenerator < handle
             pEnd = obj.throwPosition + [zeros(3,3), obj.postThrowDistance .* velocityDirection; zeros(1,4)]; 
             
             %concatinate all points in trajectory
-            cartesianTrajectory = zeros(4,4,5);
-            cartesianTrajectory(:,:,1) = obj.reloadLocation;
-            cartesianTrajectory(:,:,2) = pStart;
-            cartesianTrajectory(:,:,3) = obj.throwPosition;
-            cartesianTrajectory(:,:,4) = pEnd;
-            cartesianTrajectory(:,:,5) = obj.reloadLocation;
+            cartesianWaypoints = zeros(4,4,5);
+            cartesianWaypoints(:,:,1) = obj.reloadLocation;
+            cartesianWaypoints(:,:,2) = pStart;
+            cartesianWaypoints(:,:,3) = obj.throwPosition;
+            cartesianWaypoints(:,:,4) = pEnd;
+            cartesianWaypoints(:,:,5) = obj.reloadLocation;
+            x = [];
+            theta = [];
+            trajectoryDeltaT =[];
+
+            for i=1:1:size(cartesianWaypoints, 3) -1
+                %determine time delta for segments
+                segDist = sqrt(sum(sum((cartesianWaypoints(1:3,4,i+1) - cartesianWaypoints(1:3,4,i)).^2)));
+                segTime = segDist/velocityMagnitude;
+                deltaT = segTime/obj.STEPS;
+                segmentDeltaT = deltaT * ones (1, obj.STEPS);
+
+                [x_local,theta_local] = obj.interpolateSegment(cartesianWaypoints(:,:,i), cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
+                x = [x, x_local];
+                theta = [theta, theta_local];
+                trajectoryDeltaT = [trajectoryDeltaT, segmentDeltaT];
+            end
+
+            cartesianTrajectory = [x; theta];
 
             % interpolate RMRC segment for each cartesian trajectory segment
-            for i=1:1:size(cartesianTrajectory,3) - 1
-                % get matrices from interpolator
-                if size(tMatrix,1) == 0
-                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0, zeros(1,6));
-                else
-                    [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end),qMatrix(end,:));
-                end
+            % for i=1:1:size(cartesianTrajectory,3) - 1
+            %     % get matrices from interpolator
+            %     if size(tMatrix,1) == 0
+            %         [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0, zeros(1,6));
+            %     else
+            %         [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end),qMatrix(end,:));
+            %     end
 
-                % concatinate matrices
-                qMatrix = [qMatrix; segmentQMatrix];
-                vMatrix = [vMatrix; segmentVMatrix];
-                tMatrix = [tMatrix, segmentTMatrix];
-            end
+            %     % concatinate matrices
+            %     qMatrix = [qMatrix; segmentQMatrix];
+            %     vMatrix = [vMatrix; segmentVMatrix];
+            %     tMatrix = [tMatrix, segmentTMatrix];
+            % end
+            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory, trajectoryDeltaT, zeros(1,6));
 
         end
 
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, startPoint, endPoint, desiredVelocity, segmentStartTime, jointSeed)
+        % TODO change to take in theta matrix x matrix delta time matrix and joint seed
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, cartesianTrajectory, pointTimeDelta, jointSeed)
             % Preallocate return arrays  
-            qMatrix = zeros(obj.STEPS, obj.robot.n);
-            vMatrix = zeros(obj.STEPS, obj.robot.n);
-            tMatrix = zeros(1, obj.STEPS);
+            qMatrix = zeros(size(cartesianTrajectory,2), obj.robot.n);
+            vMatrix = zeros(size(cartesianTrajectory,2), obj.robot.n);
+            tMatrix = zeros(1, size(cartesianTrajectory,2));
             
             %determine time delta for segments
-            segDist = sqrt(sum(sum((endPoint(1:3,4) - startPoint(1:3,4)).^2)));
-            velocityMagnitude = sqrt(sum(sum(desiredVelocity.^2)));
-            segTime = segDist/velocityMagnitude;
-            deltaT = segTime/obj.STEPS;
+            % segDist = sqrt(sum(sum((endPoint(1:3,4) - startPoint(1:3,4)).^2)));
+            % velocityMagnitude = sqrt(sum(sum(desiredVelocity.^2)));
+            % segTime = segDist/velocityMagnitude;
+            % deltaT = segTime/obj.STEPS;
             
             % populate segment time array 
-            tMatrix(1) = segmentStartTime;
-            for i=2:1:obj.STEPS
-                tMatrix(1, i) = tMatrix(1, i-1) + deltaT;
+            tMatrix(1) = 0;
+            for i=2:1:size(cartesianTrajectory,2)
+                tMatrix(1, i) = tMatrix(1, i-1) + pointTimeDelta(1,i);
             end
 
             % break up traj segment into cartesian point array of size steps
-            [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
-            obj.traj = [obj.traj, x];
+            % [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
+            % obj.traj = [obj.traj, x];
             
             % get transform of first point
-            T =  [rpy2r(theta(1,1), theta(2,1), theta(3,1)) x(:,1);zeros(1,3) 1];
-            obj.orientation = cat(3, obj.orientation, T);
+            T =  [rpy2r(cartesianTrajectory(4,1), cartesianTrajectory(4,2), cartesianTrajectory(4,1)) cartesianTrajectory(1:3,1);zeros(1,3) 1];
+            % obj.orientation = cat(3, obj.orientation, T);
 
             % initial joint state
             qMatrix(1,:) = obj.robot.ikcon(T,jointSeed);
 
             % create joint state traj
-            for i=1:1:obj.STEPS-1
+            for i=1:1:size(cartesianTrajectory,2)-1
                 % determine forward kinematics solution of current joint states
                 currentT = obj.robot.fkine(qMatrix(i,:));
 
                 % determine the position delta to the next traj point
-                deltaX = x(:,i+1) - currentT(1:3,4);
+                deltaX = cartesianTrajectory(1:3,i+1) - currentT(1:3,4);
 
                 % determine linear velocity for this timestep
-                linearVelocity = (1/deltaT)*deltaX;
+                linearVelocity = (1/pointTimeDelta(1,i))*deltaX;
 
                 % determine current rotation matrix
                 currentR = currentT(1:3,1:3);
 
                 % determine future rotation matrix
-                nextR = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));
+                nextR = rpy2r(cartesianTrajectory(4,i+1),cartesianTrajectory(5,i+1),cartesianTrajectory(6,i+1));
 
                 % determine rotation change over time
-                deltaR = (1/deltaT)*(nextR - currentR);
+                deltaR = (1/pointTimeDelta(1,i))*(nextR - currentR);
 
                 % skew the matrix and determine the angular velocity
                 S = deltaR*currentR';
@@ -154,15 +174,15 @@ classdef TrajectoryGenerator < handle
 
                 % check if expected to exceed joint limits
                 for j=1:1:obj.robot.n % Loop through joints 1 to 6
-                    if qMatrix(i,j) + deltaT*vMatrix(i,j) < obj.robot.qlim(j,1) % If next joint angle is lower than joint limit...
+                    if qMatrix(i,j) + pointTimeDelta(1,i)*vMatrix(i,j) < obj.robot.qlim(j,1) % If next joint angle is lower than joint limit...
                         vMatrix(i,j) = 0;  % Stop the motor
-                    elseif qMatrix(i,j) + deltaT*vMatrix(i,j) > obj.robot.qlim(j,2) % If next joint angle is greater than joint limit ...
+                    elseif qMatrix(i,j) + pointTimeDelta(1,i)*vMatrix(i,j) > obj.robot.qlim(j,2) % If next joint angle is greater than joint limit ...
                         vMatrix(i,j) = 0; % Stop the motor
                     end
                 end
 
                 % update next joint state in qMatrix
-                qMatrix(i+1,:) = qMatrix(i,:) + deltaT*vMatrix(i,:);
+                qMatrix(i+1,:) = qMatrix(i,:) + pointTimeDelta(1,i)*vMatrix(i,:);
             end
 
         end
