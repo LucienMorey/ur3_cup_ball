@@ -18,7 +18,7 @@ classdef Projectile < handle
         function obj = Projectile(mass_, d_, cd_, cor_)
             obj.m    = mass_;
             obj.d    = d_;
-            obj.k    = 0.5 * 1.2754 * cd_ * pi * d_^2/4;
+            obj.k    = 0.5 * 1.2754 * cd_ * pi * d_^2/4 / mass_;
             obj.cor  = cor_;
         end
         
@@ -35,7 +35,7 @@ classdef Projectile < handle
         % Returns [x, y, t] vectors
         function [x, y, t] = simulatep(obj, xi, vi, n)
             % Initial projectile motion
-            [x, y, vx, vy, t] = obj.runProjectile(xi, vi, obj.k, obj.m);
+            [x, y, vx, vy, t] = obj.runProjectile(xi, vi);
 
             for i = 1:n
                 % Calculate new initial velocity/position after bounce
@@ -44,7 +44,7 @@ classdef Projectile < handle
                 xi = [x(end), y(end)];
 
                 % second bounce
-                [x2, y2, vx2, vy2, t2] = obj.runProjectile(xi, vi, obj.k, obj.m);
+                [x2, y2, vx2, vy2, t2] = obj.runProjectile(xi, vi);
 
                 % add movements together
                 x = [x; x2];
@@ -57,7 +57,7 @@ classdef Projectile < handle
         end
         
         % Performs simple projectile motion simulation
-        function [x_, y_, vx_, vy_, t] = runProjectile(obj, x0, v0, k, m)
+        function [x_, y_, vx_, vy_, t] = runProjectile(obj, x0, v0)
             t = 0;
             dt = 0.001;
 
@@ -77,8 +77,8 @@ classdef Projectile < handle
                 vx_ = [vx_; vx];
                 vy_ = [vy_; vy];
 
-                ay = -obj.g + -k/m * vy^2 * sign(vy);
-                ax = -k/m * vx^2 * sign(vx);
+                ay = -obj.g - obj.k * vy^2 * sign(vy);
+                ax = -obj.k * vx^2 * sign(vx);
 
                 vx = vx + ax*dt;
                 vy = vy + ay*dt;
