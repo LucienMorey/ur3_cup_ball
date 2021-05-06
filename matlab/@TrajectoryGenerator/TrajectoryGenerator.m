@@ -7,9 +7,9 @@ classdef TrajectoryGenerator < handle
         throwPosition;
         preThrowDistance;
         postThrowDistance;
-        reloadLocation
-        traj;
-        orientation;
+        reloadLocation;
+        cartesianTrajectory;
+        cartesianWaypoints
     end
 
     properties(Constant)
@@ -48,34 +48,39 @@ classdef TrajectoryGenerator < handle
 
             % project along velocity vector to find start and stop locations of throw
             velocityDirection = velocityVector./velocityMagnitude;
+
+            % set the required rotation matrix for the throw
+            obj.throwPosition(1:3,1:3) = obj.doubleCross(velocityDirection);;
+            
+            % ensure constant rotation for throw maneuver and translate to find start and end points
             pStart = obj.throwPosition + [zeros(3,3), (-1 * obj.preThrowDistance) .* velocityDirection; zeros(1,4)];
             pEnd = obj.throwPosition + [zeros(3,3), obj.postThrowDistance .* velocityDirection; zeros(1,4)]; 
             
             %concatinate all points in trajectory
-            cartesianWaypoints = zeros(4,4,5);
-            cartesianWaypoints(:,:,1) = obj.reloadLocation;
-            cartesianWaypoints(:,:,2) = pStart;
-            cartesianWaypoints(:,:,3) = obj.throwPosition;
-            cartesianWaypoints(:,:,4) = pEnd;
-            cartesianWaypoints(:,:,5) = obj.reloadLocation;
+            obj.cartesianWaypoints = zeros(4,4,5);
+            obj.cartesianWaypoints(:,:,1) = obj.reloadLocation;
+            obj.cartesianWaypoints(:,:,2) = pStart;
+            obj.cartesianWaypoints(:,:,3) = obj.throwPosition;
+            obj.cartesianWaypoints(:,:,4) = pEnd;
+            obj.cartesianWaypoints(:,:,5) = obj.reloadLocation;
             x = [];
             theta = [];
             trajectoryDeltaT =[];
 
-            for i=1:1:size(cartesianWaypoints, 3) -1
+            for i=1:1:size(obj.cartesianWaypoints, 3) -1
                 %determine time delta for segments
-                segDist = sqrt(sum(sum((cartesianWaypoints(1:3,4,i+1) - cartesianWaypoints(1:3,4,i)).^2)));
+                segDist = sqrt(sum(sum((obj.cartesianWaypoints(1:3,4,i+1) - obj.cartesianWaypoints(1:3,4,i)).^2)));
                 segTime = segDist/velocityMagnitude;
                 deltaT = segTime/obj.STEPS;
                 segmentDeltaT = deltaT * ones (1, obj.STEPS);
 
-                [x_local,theta_local] = obj.interpolateTranslationSegment(cartesianWaypoints(:,:,i), cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
+                [x_local,theta_local] = obj.interpolateSegment(obj.cartesianWaypoints(:,:,i), obj.cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
                 x = [x, x_local];
                 theta = [theta, theta_local];
                 trajectoryDeltaT = [trajectoryDeltaT, segmentDeltaT];
             end
 
-            cartesianTrajectory = [x; theta];
+            obj.cartesianTrajectory = [x; theta];
 
             % interpolate RMRC segment for each cartesian trajectory segment
             % for i=1:1:size(cartesianTrajectory,3) - 1
@@ -91,7 +96,7 @@ classdef TrajectoryGenerator < handle
             %     vMatrix = [vMatrix; segmentVMatrix];
             %     tMatrix = [tMatrix, segmentTMatrix];
             % end
-            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory, trajectoryDeltaT, zeros(1,6));
+            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(obj.cartesianTrajectory, trajectoryDeltaT, ones(1,6));
 
         end
 
@@ -115,7 +120,7 @@ classdef TrajectoryGenerator < handle
             end
 
             % break up traj segment into cartesian point array of size steps
-            % [x,theta] = obj.interpolateTranslationSegment(startPoint,endPoint,velocityMagnitude,deltaT);
+            % [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
             % obj.traj = [obj.traj, x];
             
             % get transform of first point
@@ -187,7 +192,7 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [xMatrix, thetaMatrix] = interpolateTranslationSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
+        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
             seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
             % determine segment
             segMagnitude = sqrt(sum(sum(seg.^2)));
@@ -201,26 +206,31 @@ classdef TrajectoryGenerator < handle
             % grab the translation components from the tf
             xMatrix(:,1) = segmentStart(1:3,4);
 
+            % determine rotation martix with double cross product and get the rpy
+            startRPY = tr2rpy(segmentStart(1:3,1:3))';
+            endRPY = tr2rpy(segmentEnd(1:3,1:3))';
+
+            deltaRPY = endRPY - startRPY;
+            angularVelocity = deltaRPY./(deltaT*obj.STEPS);
+
+            thetaMatrix(:,1) = startRPY;
+
             %interpolate translation
             for i=2:1:obj.STEPS
                 xMatrix(:,i) = xMatrix(:,i-1) + (velocityMagnitude*deltaT)*segDirection;
+                thetaMatrix(:,i) = thetaMatrix(:,i-1) + angularVelocity.*deltaT;
             end
+        end
 
-            % determine orientation of velocity vector wiht double cross
-            %z direction is along the line of travel
-            z_local = segDirection;
-            
+        function rMatrix = doubleCross(obj, zLocal)
             % arbitrary y is determined by taking the cross product of local z and the global z;
-            y_local = cross(z_local, [0; 0; 1]);
+            yLocal = cross(zLocal, [0; 0; 1]);
             
             % subsequent x vector can be found with the cross from y to z local
-            x_local = cross(y_local, z_local);
+            xLocal = cross(yLocal, zLocal);
             
             % determine rpy from rotation matrix
-            rpy = tr2rpy([x_local, y_local, z_local]);
-
-            % assume constant orientation
-            thetaMatrix = rpy' .* ones(3,obj.STEPS);
+            rMatrix = [xLocal, yLocal, zLocal];
         end
     end
 end
