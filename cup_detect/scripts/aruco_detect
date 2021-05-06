@@ -24,14 +24,18 @@ class ArucoDetect:
     self.bounding_image_pub = rospy.Publisher('/bounding_image', Image, queue_size=1)
 
     #load aruco marker dictionary
-    self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+    self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_100)
+    # this value should match the last value in the dictionary if predefined.
+    # otherwise if a custom size is used generate a new dictionary
+    #this unit is in metres
+    self.marker_size = 0.100
 
     #create aruco params
     self.aruco_param = cv2.aruco.DetectorParameters_create()
 
     # TODO offload paramaters to be obtained on ros network
-    self.cam_matrix = np.array([[ 691.64109,    0.,          305.03735],[   0.,          695.32384,  296.75875],[   0.,            0.,            1.,        ]])
-    self.dist = np.array([[ 0.24028,   -0.68609,   0.01619,   -0.00456,  0.00000]])
+    self.cam_matrix = np.array([[  658.02788,    0.,          328.23101],[   0.,          657.60186,  256.33508],[   0.,            0.,            1.,        ]])
+    self.dist = np.array([[  0.09345,   -0.09263,   -0.00033,   0.00435,  0.00000]])
     
     # init id variables
     self.cup_id = cup_id
@@ -70,7 +74,7 @@ class ArucoDetect:
         important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
 
         # Determine marker poses
-        [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, 6, self.cam_matrix, self.dist)
+        [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, self.marker_size, self.cam_matrix, self.dist)
 
         # broadcast tf from camera frame to cup_ar_tag
         #TODO check that rotation and translation values are being set to correct axis
@@ -97,6 +101,7 @@ class ArucoDetect:
         robot_ar_transform.transform.translation.x = tvecs[1][0][0]
         robot_ar_transform.transform.translation.y = tvecs[1][0][1]
         robot_ar_transform.transform.translation.z = tvecs[1][0][2]
+        print(tvecs[1][0])
         q = transformations.quaternion_from_euler(rvecs[1][0][0], rvecs[1][0][1], rvecs[1][0][2])
         robot_ar_transform.transform.rotation.x = q[0]
         robot_ar_transform.transform.rotation.y = q[1]
@@ -110,7 +115,7 @@ class ArucoDetect:
 
 if __name__ == '__main__':
   rospy.init_node('cup_detector')
-  cupDetector = ArucoDetect(5,7)
+  cupDetector = ArucoDetect(1,0)
 
   while not rospy.is_shutdown():
     rospy.spin()
