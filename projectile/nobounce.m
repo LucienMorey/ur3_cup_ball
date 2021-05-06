@@ -1,30 +1,22 @@
 % no bounce, angle calc
 clear;clc;cla;close all;
 
-g = 9.81;
-
 % create projectile
 p = Projectile(0.0027, 0.04, 0, 0.86);
 
-% goal pos
-h = 0.08;
-d = 0.40;
 
-% initial position
-xi = [0, 0.4];
+% start/end
+start = [0, 0, 0.4];
+goal  = [0.80, 0, 0.08];
 
-% initial velocity magnitude
+% velocity magnitude
 v0 = 1;
 
-% solve for theta
-c = d - xi(1);
-q1 = v0^2/ (g*c);
-q2 = v0^2 * (v0^2 - 2*g*h + 2*g*xi(2)) / (g * c)^2;
-theta = atan( q1 + sqrt(q2 - 1) );
-theta = solveQuad(xi, 1, d, h, 0.86);
+% get launch vel
+[v, xi, d, h, theta] = p.calcLaunch(start, goal, 1, v0);
 
-% get initial velocity
-vi = v0*[cos(theta), sin(theta)];
+% get initial velocity for plot
+vi = v0 * [cos(theta), sin(theta)];
 
 % get simu
 [x, y, t] = p.simulatep(xi, vi, 1);

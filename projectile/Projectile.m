@@ -5,10 +5,10 @@ classdef Projectile < handle
     % parameters given desired target.
     
     properties
-        m;   % kg
-        d;      % diameter
-        k;      % coefficient of drag, adjusted to include other constants
-        cor;    % coefficient of resititution 
+        m;          % kg
+        d;          % diameter
+        k;          % coefficient of drag, adjusted to include other constants
+        cor;        % coefficient of resititution 
         g = 9.81;
     end
     
@@ -22,13 +22,52 @@ classdef Projectile < handle
             obj.cor  = cor_;
         end
         
-        function vi = calcLaunch(obj, s, e, a)
-            % s -> start position [x, y, z]
+        function [vi, xi, dx, h, theta] = calcLaunch(obj, s, e, n, v0_)
+            % s -> launch position [x, y, z]
             % e -> end position [x, y, z]
-            % a -> inclination angle at end [degrees]
             % n -> number of bounces
             
-            % First get total time as a
+            % First, calculate the throw parameter: dx
+            dx = sqrt( (e(1)-s(1))^2 + (e(2)-s(2))^2 );
+                        
+            % initial position
+            % use x0 = 0, since we are just looking at the throw in-plane,
+            % we can take the launch point as directly above the origin
+            xi = [0, s(3)];
+
+            % initial velocity magnitude
+            % max value is 1, this must be know to get the launch angle
+            v0 = v0_;
+            
+            % height of goal
+            h = e(3);
+
+            % solve for theta
+            if n == 0
+                
+                % CASE 1: no bounces - this has very limited range so if the
+                % cup is too far it won't work
+                c = dx - xi(1);
+                q1 = v0^2/ (obj.g*c);
+                q2 = v0^2 * (v0^2 - 2*obj.g*h + 2*obj.g*xi(2)) / (obj.g * c)^2;
+                theta = atan( q1 + sqrt(q2 - 1) );
+            elseif n == 1
+                
+                % CASE 2: 1 bounce - uses optimisation solver with initial
+                % guess 45 deg
+                theta = solveQuad(xi, v0, dx, h, obj.cor);
+            end        
+            
+            % Convert in-plane velocity/angle to 3D vector
+            % given theta, phi - we basically have spherical coordinates so
+            % its just stardard spherical->cartesian conversion
+            phi = atan( (e(2)-s(2))/(e(1)-s(2)) );
+            vx = v0*cos(theta)*cos(phi);
+            vy = v0*cos(theta)*sin(phi);
+            vz = v0*sin(theta);
+            
+            % 3D velocity output vec
+            vi = [vx; vy; vz];
         end
         
         % Simulates the projectile for n bounces
@@ -57,9 +96,11 @@ classdef Projectile < handle
         end
         
         % Performs simple projectile motion simulation
+        % this is an internal function, used by simulatep()
         function [x_, y_, vx_, vy_, t_] = runProjectile(obj, x0, v0)
+            % Time & timestep
             t = 0;
-            dt = 0.001;
+            dt = 0.0005;
 
             x = x0(1);
             y = x0(2);
