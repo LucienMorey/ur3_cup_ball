@@ -40,7 +40,7 @@ classdef Projectile < handle
             for i = 1:n
                 % Calculate new initial velocity/position after bounce
                 % This is used for the second stage of motion
-                vi = [obj.cor * vx(end), -obj.cor * vy(end)];
+                vi = [vx(end), -obj.cor * vy(end)];
                 xi = [x(end), y(end)];
 
                 % second bounce
@@ -57,7 +57,7 @@ classdef Projectile < handle
         end
         
         % Performs simple projectile motion simulation
-        function [x_, y_, vx_, vy_, t] = runProjectile(obj, x0, v0)
+        function [x_, y_, vx_, vy_, t_] = runProjectile(obj, x0, v0)
             t = 0;
             dt = 0.001;
 
@@ -68,6 +68,7 @@ classdef Projectile < handle
 
             x_ = [];
             y_ = [];
+            t_ = [];
             vx_ = [];
             vy_ = [];
 
@@ -76,6 +77,7 @@ classdef Projectile < handle
                 y_ = [y_; y];
                 vx_ = [vx_; vx];
                 vy_ = [vy_; vy];
+                t_ = [t_; t];
 
                 ay = -obj.g - obj.k * vy^2 * sign(vy);
                 ax = -obj.k * vx^2 * sign(vx);
