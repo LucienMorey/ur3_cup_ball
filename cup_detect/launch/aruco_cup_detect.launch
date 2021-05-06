@@ -20,11 +20,15 @@
     <arg name="robot_ar_robot_qz" default="0.0"/>
     <arg name="robot_ar_robot_qw" default="1.0"/>
 
+    <arg name="cam_id" default="0"/>
+
     <!-- start usb cam node -->
-    <node pkg="usb_cam" type="usb_cam_node" name="$(arg detection_cam_name)"/>
+    <node pkg="usb_cam" type="usb_cam_node" name="$(arg detection_cam_name)">
+        <param name="video_device" value="/dev/video$(arg cam_id)"/>
+    </node>
     
     <!-- start cup detect node  -->
-    <node pkg="cup_detect" type="aruco_detect" name="aruco_detector">
+    <node pkg="cup_detect" type="aruco_detect" name="aruco_detector" output="screen">
         <remap from="/image" to="$(arg detection_cam_name)/image_raw"/>
     </node>
 
