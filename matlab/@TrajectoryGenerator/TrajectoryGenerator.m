@@ -69,7 +69,7 @@ classdef TrajectoryGenerator < handle
                 deltaT = segTime/obj.STEPS;
                 segmentDeltaT = deltaT * ones (1, obj.STEPS);
 
-                [x_local,theta_local] = obj.interpolateSegment(cartesianWaypoints(:,:,i), cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
+                [x_local,theta_local] = obj.interpolateTranslationSegment(cartesianWaypoints(:,:,i), cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
                 x = [x, x_local];
                 theta = [theta, theta_local];
                 trajectoryDeltaT = [trajectoryDeltaT, segmentDeltaT];
@@ -115,7 +115,7 @@ classdef TrajectoryGenerator < handle
             end
 
             % break up traj segment into cartesian point array of size steps
-            % [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
+            % [x,theta] = obj.interpolateTranslationSegment(startPoint,endPoint,velocityMagnitude,deltaT);
             % obj.traj = [obj.traj, x];
             
             % get transform of first point
@@ -187,7 +187,7 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
+        function [xMatrix, thetaMatrix] = interpolateTranslationSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
             seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
             % determine segment
             segMagnitude = sqrt(sum(sum(seg.^2)));
