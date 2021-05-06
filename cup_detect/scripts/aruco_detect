@@ -30,8 +30,8 @@ class ArucoDetect:
     self.aruco_param = cv2.aruco.DetectorParameters_create()
 
     # TODO offload paramaters to be obtained on ros network
-    self.cam_matrix = np.array([[ 691.64109,    0.,          305.03735],[   0.,          695.32384,  296.75875],[   0.,            0.,            1.,        ]])
-    self.dist = np.array([[ 0.24028,   -0.68609,   0.01619,   -0.00456,  0.00000]])
+    self.cam_matrix = np.array([[  658.02788,    0.,          328.23101],[   0.,          657.60186,  256.33508],[   0.,            0.,            1.,        ]])
+    self.dist = np.array([[  0.09345,   -0.09263,   -0.00033,   0.00435,  0.00000]])
     
     # init id variables
     self.cup_id = cup_id
