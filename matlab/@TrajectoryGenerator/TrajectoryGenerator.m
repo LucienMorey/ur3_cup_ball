@@ -82,20 +82,7 @@ classdef TrajectoryGenerator < handle
 
             obj.cartesianTrajectory = [x; theta];
 
-            % interpolate RMRC segment for each cartesian trajectory segment
-            % for i=1:1:size(cartesianTrajectory,3) - 1
-            %     % get matrices from interpolator
-            %     if size(tMatrix,1) == 0
-            %         [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, 0, zeros(1,6));
-            %     else
-            %         [segmentQMatrix, segmentVMatrix, segmentTMatrix] = obj.GenerateRMRCSegment(cartesianTrajectory(:,:,i), cartesianTrajectory(:,:,i+1), velocityVector, tMatrix(end),qMatrix(end,:));
-            %     end
 
-            %     % concatinate matrices
-            %     qMatrix = [qMatrix; segmentQMatrix];
-            %     vMatrix = [vMatrix; segmentVMatrix];
-            %     tMatrix = [tMatrix, segmentTMatrix];
-            % end
             [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(obj.cartesianTrajectory, trajectoryDeltaT, ones(1,6));
 
         end
@@ -107,11 +94,6 @@ classdef TrajectoryGenerator < handle
             vMatrix = zeros(size(cartesianTrajectory,2), obj.robot.n);
             tMatrix = zeros(1, size(cartesianTrajectory,2));
             
-            %determine time delta for segments
-            % segDist = sqrt(sum(sum((endPoint(1:3,4) - startPoint(1:3,4)).^2)));
-            % velocityMagnitude = sqrt(sum(sum(desiredVelocity.^2)));
-            % segTime = segDist/velocityMagnitude;
-            % deltaT = segTime/obj.STEPS;
             
             % populate segment time array 
             tMatrix(1) = 0;
@@ -119,9 +101,6 @@ classdef TrajectoryGenerator < handle
                 tMatrix(1, i) = tMatrix(1, i-1) + pointTimeDelta(1,i);
             end
 
-            % break up traj segment into cartesian point array of size steps
-            % [x,theta] = obj.interpolateSegment(startPoint,endPoint,velocityMagnitude,deltaT);
-            % obj.traj = [obj.traj, x];
             
             % get transform of first point
             T =  [rpy2r(cartesianTrajectory(4,1), cartesianTrajectory(4,2), cartesianTrajectory(4,1)) cartesianTrajectory(1:3,1);zeros(1,3) 1];
