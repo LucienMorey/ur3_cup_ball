@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import Header
-import rpi.GPIO as GPIO
-
+from std_msgs.msg import Bool
+import RPi.GPIO as GPIO
 
 
 if __name__ == "__main__":
@@ -19,14 +18,17 @@ if __name__ == "__main__":
     rospy.init_node('estop_node')
 
     # create estop publisher
-    estop_pub = rospy.Publisher('/estop', Header, queue_size=1)
+    estop_pub = rospy.Publisher('/estop', Bool, queue_size=1)
     
     #main loop
+    button_previous = GPIO.input(button_pin)
+    button_current = button_previous
     while not rospy.is_shutdown():
-        # check if button pressed
-        if GPIO.input(button_pin) == GPIO.HIGH
+        #look for change in button state
+        button_current = GPIO.input(button_pin)
+        if button_current != button_previous:
+                msg = Bool()
+                msg.data = button_current
+                estop_pub.publish(msg)
+        button_previous = GPIO.input(button_pin)
 
-            msg = Header()
-            msg.stamp = rospy.Time.now() 
-            # publish msg
-            estop_pub.publish(msg)
