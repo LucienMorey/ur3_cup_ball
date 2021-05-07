@@ -2,21 +2,31 @@
 
 import rospy
 from std_msgs.msg import Header
+import rpi.GPIO as GPIO
 
 
 
 if __name__ == "__main__":
+    button_pin = 5
+
     # start gpio
+    GPIO.setmode(GPIO.BOARD)
 
     # pull down button
+    GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     # start ros node
+    rospy.init_node('estop_node')
 
     # create estop publisher
+    estop_pub = rospy.Publisher('/estop', Header, queue_size=1)
     
     #main loop
     while not rospy.is_shutdown():
-        # if button pressed 
+        # check if button pressed
+        if GPIO.input(button_pin) == GPIO.HIGH
+
+            msg = Header()
+            msg.stamp = rospy.Time.now() 
             # publish msg
-    
-        pass
+            estop_pub.publish(msg)
