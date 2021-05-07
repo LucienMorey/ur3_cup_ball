@@ -180,9 +180,11 @@ classdef TrajectoryGenerator < handle
                 % check if expected to exceed joint limits
                 for j=1:1:obj.robot.n % Loop through joints 1 to 6
                     if qMatrix(i,j) + pointTimeDelta(1,i)*vMatrix(i,j) < obj.robot.qlim(j,1) % If next joint angle is lower than joint limit...
-                        vMatrix(i,j) = 0;  % Stop the motor
+                        vMatrix(i, j) = ( obj.robot.qlim(j,1) - qMatrix(i,j) )/ pointTimeDelta(1,i);
+                        %vMatrix(i,j) = 0;  % Stop the motor
                     elseif qMatrix(i,j) + pointTimeDelta(1,i)*vMatrix(i,j) > obj.robot.qlim(j,2) % If next joint angle is greater than joint limit ...
-                        vMatrix(i,j) = 0; % Stop the motor
+                        vMatrix(i, j) = ( obj.robot.qlim(j,1) - qMatrix(i,j) )/ pointTimeDelta(1,i);
+                        %vMatrix(i,j) = 0; % Stop the motor
                     end
                 end
 
