@@ -15,7 +15,7 @@ classdef TrajectoryGenerator < handle
     properties(Constant)
         EPSILON = 1.0;
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
-        STEPS = 20;
+        STEPS = 50;
     end
     
     methods
@@ -43,43 +43,48 @@ classdef TrajectoryGenerator < handle
             vMatrix = [];
             tMatrix = [];
             
-            % determine velocity magnitude
-            velocityMagnitude = sqrt(sum(sum(velocityVector.^2)));
+            % velocity magnitude
+            velocityMagnitude = norm(velocityVector);
 
-            % project along velocity vector to find start and stop locations of throw
-            velocityDirection = velocityVector./velocityMagnitude;
+            % get velocity unit vector
+            velocityDirection = velocityVector / velocityMagnitude;
 
-            % set the required rotation matrix for the throw
-            obj.throwPosition(1:3,1:3) = obj.doubleCross(velocityDirection);;
+            % get rotation matrix, z-axis in line with velocity vector
+            obj.throwPosition(1:3,1:3) = obj.doubleCross(velocityDirection);
             
-            % ensure constant rotation for throw maneuver and translate to find start and end points
-            pStart = obj.throwPosition + [zeros(3,3), (-1 * obj.preThrowDistance) .* velocityDirection; zeros(1,4)];
-            pEnd = obj.throwPosition + [zeros(3,3), obj.postThrowDistance .* velocityDirection; zeros(1,4)]; 
+            % Get start and end of throw, by extending velocity direcion by pre-throw dist and post-throw dist
+            % Rotation component is not touched to ensure end-effector stays straight
+            pStart = obj.throwPosition + [zeros(3,3), -obj.preThrowDistance * velocityDirection; zeros(1,4)];
+            pEnd   = obj.throwPosition + [zeros(3,3), obj.postThrowDistance * velocityDirection; zeros(1,4)]; 
             
-            %concatinate all points in trajectory
+            % concatinate all points in trajectory
+            % five 4x4 transforms
             obj.cartesianWaypoints = zeros(4,4,5);
             obj.cartesianWaypoints(:,:,1) = obj.reloadLocation;
             obj.cartesianWaypoints(:,:,2) = pStart;
             obj.cartesianWaypoints(:,:,3) = obj.throwPosition;
             obj.cartesianWaypoints(:,:,4) = pEnd;
             obj.cartesianWaypoints(:,:,5) = obj.reloadLocation;
+            obj.cartesianWaypoints
+
+            % calc vars
             x = [];
             theta = [];
-            trajectoryDeltaT =[];
+            trajectoryDeltaT = [];
 
-            for i=1:1:size(obj.cartesianWaypoints, 3) -1
-                %determine time delta for segments
-                segDist = sqrt(sum(sum((obj.cartesianWaypoints(1:3,4,i+1) - obj.cartesianWaypoints(1:3,4,i)).^2)));
-                segTime = segDist/velocityMagnitude;
-                deltaT = segTime/obj.STEPS;
-                segmentDeltaT = deltaT * ones (1, obj.STEPS);
+            % For each segment of the trajectory
+            for i = 1:size(obj.cartesianWaypoints, 3) - 1
 
-                [x_local,theta_local] = obj.interpolateSegment(obj.cartesianWaypoints(:,:,i), obj.cartesianWaypoints(:,:,i+1), velocityMagnitude, deltaT);
+                % get the interpolated segment
+                [x_local,theta_local, t_segment] = obj.interpolateSegment(obj.cartesianWaypoints(:,:,i), obj.cartesianWaypoints(:,:,i+1), velocityMagnitude);
+
+                % Add the segments to the total path
                 x = [x, x_local];
                 theta = [theta, theta_local];
-                trajectoryDeltaT = [trajectoryDeltaT, segmentDeltaT];
+                trajectoryDeltaT = [trajectoryDeltaT, t_segment];
             end
 
+            % total path
             obj.cartesianTrajectory = [x; theta];
 
 
@@ -113,7 +118,7 @@ classdef TrajectoryGenerator < handle
             for i=1:1:size(cartesianTrajectory,2)-1
                 % determine forward kinematics solution of current joint states
                 currentT = obj.robot.fkine(qMatrix(i,:));
-
+      
                 % determine the position delta to the next traj point
                 deltaX = cartesianTrajectory(1:3,i+1) - currentT(1:3,4);
 
@@ -173,33 +178,35 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [xMatrix, thetaMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, deltaT)
-            seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
-            % determine segment
-            segMagnitude = sqrt(sum(sum(seg.^2)));
+        function [xMatrix, thetaMatrix, tMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude)
             
-            % determine directional unit vector of segment
-            segDirection = seg./segMagnitude;
+            % segment delta x,y,z
+            seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
+            
+            % segment length
+            segMagnitude = norm(seg);
+            
+            % segment unit vector
+            segDirection = seg / segMagnitude;
 
-            % preallocate cartesian point sizes
-            xMatrix = zeros(3,obj.STEPS);      
+            % time interval for each step
+            dt = segMagnitude / velocityMagnitude / obj.STEPS;
 
-            % grab the translation components from the tf
-            xMatrix(:,1) = segmentStart(1:3,4);
+            % xmatrix -> x,y,z positions of segment
+            % thetaMatrix -> rpy of segment
+            xMatrix     = zeros(3, obj.STEPS);
+            thetaMatrix = zeros(3, obj.STEPS);
+            tMatrix     = repmat(dt, 1, obj.STEPS);
 
-            % determine rotation martix with double cross product and get the rpy
+            % get the rpy increment for each step
             startRPY = tr2rpy(segmentStart(1:3,1:3))';
             endRPY = tr2rpy(segmentEnd(1:3,1:3))';
+            rpyIncrement = (endRPY - startRPY) / obj.STEPS;
 
-            deltaRPY = endRPY - startRPY;
-            angularVelocity = deltaRPY./(deltaT*obj.STEPS);
-
-            thetaMatrix(:,1) = startRPY;
-
-            %interpolate translation
-            for i=2:1:obj.STEPS
-                xMatrix(:,i) = xMatrix(:,i-1) + (velocityMagnitude*deltaT)*segDirection;
-                thetaMatrix(:,i) = thetaMatrix(:,i-1) + angularVelocity.*deltaT;
+            % interpolate translation and rotation
+            for i = 1:obj.STEPS
+                xMatrix(:,i)     = segmentStart(1:3,4) + (i-1)*(velocityMagnitude*dt)*segDirection;
+                thetaMatrix(:,i) = startRPY + (i-1)*rpyIncrement;
             end
         end
 
