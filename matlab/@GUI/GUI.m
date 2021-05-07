@@ -53,7 +53,7 @@ classdef GUI < matlab.apps.AppBase & handle
             % rosinit('192.168.0.253');
             rosinit();
 
-            obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool');
+            obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
 
             
@@ -64,7 +64,7 @@ classdef GUI < matlab.apps.AppBase & handle
         
         function onOpenServoButton(obj, app, event)
             servoState = rosmessage('std_msgs/Bool');
-            servoState.Data = true
+            servoState.Data = true;
             send(obj.servoPublisher, servoState);
         end
 
