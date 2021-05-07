@@ -46,6 +46,40 @@ classdef GUI < matlab.apps.AppBase & handle
             %GUI Construct an instance of this class
             %   Detailed explanation goes here
             
+            obj.guiElementGenerate();
+
+            % ROS master address
+            %%TODO add ros master address
+            % rosinit('192.168.0.253');
+            rosinit();
+
+            obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool');
+            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
+
+            
+        end
+    end
+
+    methods(Access = private)
+        
+        function onOpenServoButton(obj, app, event)
+            servoState = rosmessage('std_msgs/Bool');
+            servoState.Data = true
+            send(obj.servoPublisher, servoState);
+        end
+
+        function onCloseServoButton(obj, app, event)
+            servoState = rosmessage('std_msgs/Bool');
+            servoState.Data = false;
+            send(obj.servoPublisher, servoState);
+        end
+
+        function onExitButton(obj, app, event)
+            rosshutdown;
+            close(obj.fig);
+        end
+
+        function guiElementGenerate(obj)
             %PLOT 1
             obj.fig = figure('units','normalized','outerposition',[0 0 1 1]);
             
@@ -148,36 +182,6 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.yMinusButton = uicontrol('String', 'Y-', 'position', [900 120 100 30]);
             %attach button callback
             %CALLBACK
-
-            % ROS master address
-            %%TODO add ros master address
-            % rosinit('192.168.0.253');
-            rosinit();
-
-            obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool');
-            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
-
-            
-        end
-    end
-
-    methods(Access = private)
-        
-        function onOpenServoButton(obj, app, event)
-            servoState = rosmessage('std_msgs/Bool');
-            servoState.Data = true
-            send(obj.servoPublisher, servoState);
-        end
-
-        function onCloseServoButton(obj, app, event)
-            servoState = rosmessage('std_msgs/Bool');
-            servoState.Data = false;
-            send(obj.servoPublisher, servoState);
-        end
-
-        function onExitButton(obj, app, event)
-            rosshutdown;
-            close(obj.fig);
         end
     end
 end
