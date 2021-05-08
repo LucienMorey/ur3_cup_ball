@@ -37,6 +37,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
         servoPublisher;
         estopSubscriber;
+        tree;
+        cupRobotFrame;
         
         ur3;
     end
@@ -56,6 +58,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
 
+            obj.tree = rostf;
             
         end
     end
@@ -77,6 +80,37 @@ classdef GUI < matlab.apps.AppBase & handle
         function onExitButton(obj, app, event)
             rosshutdown;
             close(obj.fig);
+        end
+
+        function onGetCupPoseButton(obj, app, event)
+            % check for joined tf tree
+            try
+                % transform origin of cup to robot frame
+                pose = rosmessage('geometry_msgs/PoseStamped');
+                pose.Header.FrameId = 'cup';
+                pose.Pose.Position.X = 0.0;
+                pose.Pose.Position.Y = 0.0;
+                pose.Pose.Position.Z = 0.0;
+                pose.Pose.Orientation.X = 0.0;
+                pose.Pose.Orientation.Y = 0.0;
+                pose.Pose.Orientation.Z = 0.0;
+                pose.Pose.Orientation.W = 1.0;
+
+                transformedPose = transform(obj.tree, 'robot', pose);
+                obj.cupRobotFrame = [quat2rotm(transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W), [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y, transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                % set ui element info
+                obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
+                obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
+                obj.cupLocationZField.String = num2str(obj.cupRobotFrame(3,4));
+
+            % catch broken tf tree
+            catch
+                disp('tf error check for joined trees');
+                % set ui element info
+                obj.cupLocationXField.String = 'error';
+                obj.cupLocationYField.String = 'error';
+                obj.cupLocationZField.String = 'error';
+            end
         end
 
         function guiElementGenerate(obj)
@@ -141,7 +175,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create get Cup Pose button button
             obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [620 120 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.getCupPoseButton.Callback = @obj.onGetCupPoseButton;
 
             %create abort button
             obj.abortButton = uicontrol('String', 'Abort', 'position', [620 80 100 30]);
