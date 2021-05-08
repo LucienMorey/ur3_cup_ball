@@ -97,7 +97,10 @@ classdef GUI < matlab.apps.AppBase & handle
                 pose.Pose.Orientation.W = 1.0;
 
                 transformedPose = transform(obj.tree, 'robot', pose);
-                obj.cupRobotFrame = [quat2rotm(transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W), [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y, transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                %create rotation matrix from tranformed quaternion
+                rotm = quat2rotm([transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W]);
+                %compound rotation matrix and translation into homogenous transform
+                obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
