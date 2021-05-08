@@ -1,20 +1,20 @@
 clc; close all; clear;
 
-robot = UR5();
+robot = UR3m();
+pause(2);
 
-reload_position = transl(0.4,0,0.4);
-throw_position = transl(0,0.4,0);
+reload_position = transl(-0.1,0,0.55);
+throw_position = transl(0,0.3,0.3);
   
 startQ = robot.model.ikcon(reload_position, ones(1,6));
 
-figure()
 robot.model.animate([0, 0, 0, 0, 0, 0]);
 
-trajgen = TrajectoryGenerator(robot.model, throw_position, 0.3,0.5, reload_position);
-[qMatrix,vMatrix,tMatrix] = trajgen.GenerateTrajectory([1; 0; 0]);
+trajgen = TrajectoryGenerator(robot.model, throw_position, 0.1,0.45, reload_position);
+[qMatrix,vMatrix,tMatrix] = trajgen.GenerateThrow([1; 0; 0]);
 
-robot.model.plot(qMatrix, 'trail', 'r');
+robot.model.plot(qMatrix, 'trail', 'r', 'fps', 40);
 
-
-
+[qMatrix,vMatrix,tMatrix] = trajgen.jog(qMatrix(end, :), [0 0.3 0]);
+robot.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
 %gui = GUI();
