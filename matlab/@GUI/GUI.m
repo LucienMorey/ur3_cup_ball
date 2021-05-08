@@ -79,7 +79,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onExitButton(obj, app, event)
             rosshutdown;
-            close(obj.fig);
+            delete(obj.fig);
         end
 
         function onGetCupPoseButton(obj, app, event)
@@ -116,6 +116,7 @@ classdef GUI < matlab.apps.AppBase & handle
         function guiElementGenerate(obj)
             %PLOT 1
             obj.fig = figure('units','normalized','outerposition',[0 0 1 1]);
+            obj.fig.CloseRequestFcn = @obj.onExitButton;
             
             % UR3 subplot
             obj.robotPlot_h = subplot(1, 2, 1);
