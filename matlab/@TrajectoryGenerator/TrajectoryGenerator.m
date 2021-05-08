@@ -169,13 +169,22 @@ classdef TrajectoryGenerator < handle
         function [q, v, t] = jog(obj, qs, d)
             % dir should be unit vector in direction of movement
             % start/end transformy
-            t_start = obj.robot.fkine(qs)
-            t_end   = transl(d) * t_start
+            tStart = obj.robot.fkine(qs)
+            tEnd   = transl(d) * tStart
 
             % make xyz, rpy path
-            [x, r, dt] = obj.interpolateSegment(t_start, t_end, obj.JOG_VEL, obj.JOG_STEPS);
+            [x, r, dt] = obj.interpolateSegment(tStart, tEnd, obj.JOG_VEL, obj.JOG_STEPS);
             [q, v, t] = obj.GenerateRMRCSegment(x, r, dt, qs);
+        end
 
+        function [q] = jointJog(obj, qs, dq)
+            % qs -> current joint state
+            % dq -> delta for each joint
+            qf = qs + dq;
+
+            % Since this is all joint-space, not going to rmrc
+            % quintic polynomial interpolation
+            q = jtraj(qs, qf, obj.JOG_STEPS);
         end
 
         function [xMatrix, thetaMatrix, tMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, steps)
