@@ -6,6 +6,10 @@ classdef GUI < matlab.apps.AppBase & handle
         
         
     end
+
+    properties(Constant)
+        SUBSCIRIBER_TIMEOUT = 0.5;
+    end
     
     properties(Access = private)
         fig;
@@ -37,6 +41,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
         servoPublisher;
         estopSubscriber;
+        jointStateSubscriber;
         tree;
         cupRobotFrame;
         
@@ -57,6 +62,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
+            obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
 
             obj.tree = rostf;
             
@@ -115,6 +121,79 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.cupLocationZField.String = 'error';
             end
         end
+
+        function onXPlusButton(obj, app, event)
+            disp('jog XPlus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
+        function onXMinusButton(obj, app, event)
+            disp('jog XMinus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
+        function onYPlusButton(obj, app, event)
+            disp('jog YPlus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
+        function onYMinusButton(obj, app, event)
+            disp('jog YMinus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
+        function onZPlusButton(obj, app, event)
+            disp('jog ZPlus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
+        function onZMinusButton(obj, app, event)
+            disp('jog ZMinus');
+            try
+                latestMessage = recieve(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                currentJointState_321456 = latestMessage.Position; % Note the default order of the joints is 3,2,1,4,5,6
+                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
+                %trajgen.jog(current_joint_angles, [0,0,-1])
+            catch
+                disp('No message received');
+            end
+        end
+
 
         function guiElementGenerate(obj)
             %PLOT 1
@@ -194,32 +273,32 @@ classdef GUI < matlab.apps.AppBase & handle
             %create exit button
             obj.xPlusButton = uicontrol('String', 'X+', 'position', [1100 90 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.xPlusButton.Callback = @obj.onXPlusButton;
 
             %create exit button
             obj.xMinusButton = uicontrol('String', 'X-', 'position', [900 90 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.xMinusButton.Callback = @obj.onXMinusButton;
 
             %create exit button
             obj.zPlusButton = uicontrol('String', 'Z+', 'position', [1000 120 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.zPlusButton.Callback = @obj.onZPlusButton;
 
             %create exit button
             obj.zMinusButton = uicontrol('String', 'Z-', 'position', [1000 60 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.zMinusButton.Callback = @obj.onZMinusButton;
 
             %create exit button
             obj.yPlusButton = uicontrol('String', 'Y+', 'position', [1100 120 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.yPlusButton.Callback = @obj.onYPlusButton;
 
             %create exit button
             obj.yMinusButton = uicontrol('String', 'Y-', 'position', [900 120 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.yMinusButton.Callback = @obj.onYMinusButton;
         end
     end
 end
