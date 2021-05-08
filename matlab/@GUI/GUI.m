@@ -9,6 +9,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
     properties(Constant)
         SUBSCIRIBER_TIMEOUT = 0.5;
+        CARTESIAN_JOG_DIST =0.2;
     end
     
     properties(Access = private)
@@ -46,6 +47,7 @@ classdef GUI < matlab.apps.AppBase & handle
         cupRobotFrame;
         
         ur3;
+        trajectoryGenerator;
     end
     
     methods
@@ -65,6 +67,15 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
 
             obj.tree = rostf;
+
+            reload_position = transl(-0.1,0,0.55);
+            throw_position = transl(0,0.3,0.3);
+            
+            startQ = obj.ur3.model.ikcon(reload_position, ones(1,6));
+
+            obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
+
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, throw_position, 0.1,0.45, reload_position);
             
         end
     end
@@ -124,71 +135,42 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onXPlusButton(obj, app, event)
             disp('jog XPlus');
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
-            catch
-                disp('No message received');
-            end
+            obj.cartesianJog([obj.CARTESIAN_JOG_DIST,0, 0]);
         end
 
         function onXMinusButton(obj, app, event)
             disp('jog XMinus');
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
-            catch
-                disp('No message received');
-            end
+            obj.cartesianJog([-obj.CARTESIAN_JOG_DIST,0, 0]);
         end
 
         function onYPlusButton(obj, app, event)
             disp('jog YPlus');
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
-            catch
-                disp('No message received');
-            end
+            obj.cartesianJog([0,obj.CARTESIAN_JOG_DIST, 0]);
         end
 
         function onYMinusButton(obj, app, event)
             disp('jog YMinus');
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
-            catch
-                disp('No message received');
-            end
+            obj.cartesianJog([0,-obj.CARTESIAN_JOG_DIST, 0]);
         end
 
         function onZPlusButton(obj, app, event)
             disp('jog ZPlus');
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
-            catch
-                disp('No message received');
-            end
+            obj.cartesianJog([0,0, obj.CARTESIAN_JOG_DIST]);
         end
 
         function onZMinusButton(obj, app, event)
             disp('jog ZMinus');
+            obj.cartesianJog([0,0, -obj.CARTESIAN_JOG_DIST]);
+        end
+
+        function cartesianJog(obj, direction)
+            axes(obj.robotPlot_h);
             try
                 latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
                 currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
                 currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                %trajgen.jog(current_joint_angles, [0,0,-1])
+                [qMatrix,vMatrix,zMatrix] = obj.trajectoryGenerator.jog(currentJointState_123456, direction);
+                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
             catch
                 disp('No message received');
             end
