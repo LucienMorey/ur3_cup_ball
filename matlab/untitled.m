@@ -1,20 +1,20 @@
 clc; close all; clear;
-% robot = UR5(false);
-% reload_position = transl(0,0,0.4);
-% throw_position = transl(0.2,0.2,0.2);
-% startQ = robot.model.ikcon(reload_position, ones(1,6));
-% robot.model.animate(startQ);
-% trajgen = TrajectoryGenerator(robot.model, throw_position, 0.1,0.1, reload_position);
-% [qMatrix,vMatrix,tMatrix] = trajgen.GenerateTrajectory([0;0.5;0.5]);
-% figure()
-% hold on;
-% plot3(trajgen.cartesianTrajectory(1,:), trajgen.cartesianTrajectory(2,:), trajgen.cartesianTrajectory(3,:));
-% 
-% for i = 1:1:size(trajgen.cartesianWaypoints,3)
-%     trplot(trajgen.cartesianWaypoints(:,:,i), 'length', 0.05);
-% end
-% figure()he
-% robot.model.plot(qMatrix, 'trail', 'r');
 
+robot = UR3m();
+pause(2);
 
-gui = GUI();
+reload_position = transl(-0.1,0,0.55);
+throw_position = transl(0,0.3,0.3);
+  
+startQ = robot.model.ikcon(reload_position, ones(1,6));
+
+robot.model.animate([0, 0, 0, 0, 0, 0]);
+
+trajgen = TrajectoryGenerator(robot.model, throw_position, 0.1,0.45, reload_position);
+[qMatrix,vMatrix,tMatrix] = trajgen.GenerateThrow([1; 0; 0]);
+
+robot.model.plot(qMatrix, 'trail', 'r', 'fps', 40);
+
+[qMatrix,vMatrix,tMatrix] = trajgen.jog(qMatrix(end, :), [0 0.3 0]);
+robot.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+%gui = GUI();
