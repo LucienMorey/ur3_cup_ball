@@ -13,7 +13,7 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 0.003; % tune this if not moving well
+        EPSILON = 0.01; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
         STEPS = 50;     % more steps make the movement better
         JOG_VEL = 0.1;
@@ -137,7 +137,7 @@ classdef TrajectoryGenerator < handle
                 % check if a damped least squares solution is required
                 if m < obj.EPSILON
                     % least squares
-                    lambda = (1 - m/obj.EPSILON)*5E-2;
+                    lambda = (1 - m/obj.EPSILON)*1E-1;
                 else
                     % not required
                     lambda = 0;
