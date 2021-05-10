@@ -48,6 +48,20 @@ classdef GUI < matlab.apps.AppBase & handle
         yMinusButton;
         zPlusButton;
         zMinusButton;
+        q1Plus;
+        q1Minus;
+        q2Plus;
+        q2Minus;
+        q3Plus;
+        q3Minus;
+        q4Plus;
+        q4Minus;
+        q5Plus;
+        q5Minus;
+        q6Plus;
+        q6Minus;
+
+        gamePadJog;
 
         servoPublisher;
         estopSubscriber;
@@ -267,28 +281,28 @@ classdef GUI < matlab.apps.AppBase & handle
 
             %BUTTONS
             %create fire button
-            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 120 100 30]);
+            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
             %attach button callback
             %CALLBACK
 
             %create Open Servo button
-            obj.openButton = uicontrol('String', 'Open Servo', 'position', [400 80 100 30]);
+            obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
             %attach button callback
             obj.openButton.Callback = @obj.onOpenServoButton;
 
 
             %create Close servo button
-            obj.closeButton = uicontrol('String', 'Close Servo', 'position', [510 120 100 30]);
+            obj.closeButton = uicontrol('String', 'Close Servo', 'position', [510 80 100 30]);
             %attach button callback
             obj.closeButton.Callback = @obj.onCloseServoButton;
 
             %create return home button
-            obj.homeButton = uicontrol('String', 'Return Home', 'position', [510 80 100 30]);
+            obj.homeButton = uicontrol('String', 'Return Home', 'position', [620 120 100 30]);
             %attach button callback
             %CALLBACK
 
             %create get Cup Pose button button
-            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [620 120 100 30]);
+            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [400 120 100 30]);
             %attach button callback
             obj.getCupPoseButton.Callback = @obj.onGetCupPoseButton;
 
@@ -331,6 +345,35 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.yMinusButton = uicontrol('String', 'Y-', 'position', [900 120 100 30]);
             %attach button callback
             obj.yMinusButton.Callback = @obj.onYMinusButton;
+            
+            %create gamepad control jog
+            obj.gamePadJog = uicontrol('String', 'GamePadEnable', 'position', [1000 90 100 30]);
+            %Callback
+
+            %create joint jog buttons
+            obj.q1Plus = uicontrol('String', 'q1+', 'position', [1300 120 100 30]);
+            obj.q1Minus = uicontrol('String', 'q1-', 'position', [1400 120 100 30]);
+
+            obj.q2Plus = uicontrol('String', 'q2+', 'position', [1300 90 100 30]);
+            obj.q2Minus = uicontrol('String', 'q2-', 'position', [1400 90 100 30]);
+
+            obj.q3Plus = uicontrol('String', 'q3+', 'position', [1300 60 100 30]);
+            obj.q3Minus = uicontrol('String', 'q3-', 'position', [1400 60 100 30]);
+
+            obj.q4Plus = uicontrol('String', 'q4+', 'position', [1550 120 100 30]);
+            obj.q4Minus = uicontrol('String', 'q4-', 'position', [1650 120 100 30]);
+
+            obj.q5Plus = uicontrol('String', 'q5+', 'position', [1550 90 100 30]);
+            obj.q5Minus = uicontrol('String', 'q5-', 'position', [1650 90 100 30]);
+
+            obj.q6Plus = uicontrol('String', 'q6+', 'position', [1550 60 100 30]);
+            obj.q6Minus = uicontrol('String', 'q6-', 'position', [1650 60 100 30]);
+
+
+
+
+
+
         end
     end
 end
