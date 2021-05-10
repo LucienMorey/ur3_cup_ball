@@ -10,6 +10,8 @@ classdef GUI < matlab.apps.AppBase & handle
     properties(Constant)
         SUBSCIRIBER_TIMEOUT = 0.5;
         CARTESIAN_JOG_DIST =0.2;
+        UR3_JOINT_NAMES = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
+
     end
     
     properties(Access = private)
@@ -45,6 +47,8 @@ classdef GUI < matlab.apps.AppBase & handle
         jointStateSubscriber;
         tree;
         cupRobotFrame;
+        actionClient;
+        trajGoal;
         
         ur3;
         trajectoryGenerator;
@@ -65,9 +69,11 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
-
+            [obj.actionClient, obj.trajGoal] = rosactionclient('/scaled_pos_joint_traj_controller/follow_joint_trajectory');
+            obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
+            obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
             obj.tree = rostf;
-
+    
             reload_position = transl(-0.1,0,0.55);
             throw_position = transl(0,0.3,0.3);
             
@@ -169,8 +175,20 @@ classdef GUI < matlab.apps.AppBase & handle
                 latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
                 currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
                 currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                [qMatrix,vMatrix,zMatrix] = obj.trajectoryGenerator.jog(currentJointState_123456, direction);
+                [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.jog(currentJointState_123456, direction);
                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                obj.trajGoal.Trajectory.Points = [];
+                for i=1:1:size(qMatrix,1)
+                    trajPoint = rosmessage('trajectory_msgs/JointTrajectoryPoint');
+                    trajPoint.Positions = qMatrix(i,:);
+                    trajPoint.Velocities = vMatrix(i,:);
+                    trajPoint.TimeFromStart = rosduration(tMatrix(i,1));
+                    obj.trajGoal.Trajectory.Points = [obj.trajGoal.Trajectory.Points; trajPoint];
+                    
+                end
+                obj.trajGoal.Trajectory.Header.Stamp = rostime('now');
+                sendGoal(obj.actionClient, obj.trajGoal);
+
             catch
                 disp('No message received');
             end
