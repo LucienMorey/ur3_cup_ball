@@ -130,6 +130,27 @@ classdef GUI < matlab.apps.AppBase & handle
             delete(obj.fig);
         end
 
+        function onHomeButton(obj, app, event)
+            % current pose
+            q = obj.getJointState();
+
+            % error to home pose
+            qe = zeros(1, 6) - q;
+            
+            % jjog
+            [q, v, t] = obj.trajectoryGenerator.jjog(q, qe);
+
+            % make message to send
+            % make the traj message
+            obj.makeTrajMsg(q, v, t);
+
+            try
+                sendGoal(obj.actionClient, obj.trajGoal);
+            catch
+                disp('Action sever error');
+            end
+        end
+
         function onGetCupPoseButton(obj, app, event)
             % check for joined tf tree
             try
@@ -212,29 +233,47 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function cartesianJog(obj, direction)
             axes(obj.robotPlot_h);
-            try
-                latestMessage = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
-                currentJointState_321456 = (latestMessage.Position)'; % Note the default order of the joints is 3,2,1,4,5,6
-                currentJointState_123456 = [currentJointState_321456(1,3:-1:1),currentJointState_321456(1,4:6)];
-                [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.jog(currentJointState_123456, direction);
-                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                obj.trajGoal.Trajectory.Points = [];
-                for i=1:1:size(qMatrix,1)
-                    trajPoint = rosmessage('trajectory_msgs/JointTrajectoryPoint');
-                    trajPoint.Positions = qMatrix(i,:);
-                    trajPoint.Velocities = vMatrix(i,:);
-                    trajPoint.TimeFromStart = rosduration(tMatrix(i,1));
-                    obj.trajGoal.Trajectory.Points = [obj.trajGoal.Trajectory.Points; trajPoint];
-                    
-                end
-                obj.trajGoal.Trajectory.Header.Stamp = rostime('now');
-                sendGoal(obj.actionClient, obj.trajGoal);
 
-            catch
-                disp('No message received');
+            q = obj.getJointState();
+            if ~isempty(q)
+                [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
+                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                
+                % make the traj message
+                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
+
+                try
+                    sendGoal(obj.actionClient, obj.trajGoal);
+                catch
+                    disp('Action sever error');
+                end
             end
         end
 
+        function makeTrajMsg(obj, q, v, t)
+            obj.trajGoal.Trajectory.Points = [];
+            for i=1:1:size(q,1)
+                trajPoint = rosmessage('trajectory_msgs/JointTrajectoryPoint');
+                trajPoint.Positions = q(i,:);
+                trajPoint.Velocities = v(i,:);
+                trajPoint.TimeFromStart = rosduration(t(i,1));
+                obj.trajGoal.Trajectory.Points = [obj.trajGoal.Trajectory.Points; trajPoint];
+            end
+            obj.trajGoal.Trajectory.Header.Stamp = rostime('now');
+        end
+
+        function q = getJointState(obj)
+            try
+                msg = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
+                q321456 = (msg.Position)';
+
+                % Note the default order of the joints is 3,2,1,4,5,6
+                q = [q321456(1,3:-1:1), q321456(1,4:6)];
+            catch
+                q = [];
+                disp('No message received');
+            end
+        end
 
         function guiElementGenerate(obj)
             %PLOT 1
@@ -299,7 +338,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create return home button
             obj.homeButton = uicontrol('String', 'Return Home', 'position', [620 120 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.homeButton.Callback = @obj.onHomeButton;
 
             %create get Cup Pose button button
             obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [400 120 100 30]);
