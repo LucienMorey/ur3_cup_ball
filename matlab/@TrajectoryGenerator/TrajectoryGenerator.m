@@ -16,7 +16,8 @@ classdef TrajectoryGenerator < handle
         EPSILON = 0.006; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
         STEPS = 75;     % more steps make the movement better
-        JOG_VEL = 0.1;
+        LINEAR_CART_VEL = 0.1;
+        JOINT_JOG_VEL = pi/9;
         JOG_STEPS = 30; % more steps make the movement better
     end
     
@@ -177,7 +178,7 @@ classdef TrajectoryGenerator < handle
             tEnd   = transl(d) * tStart;
 
             % make xyz, rpy path
-            [x, r, dt] = obj.interpolateSegment(tStart, tEnd, obj.JOG_VEL, obj.JOG_STEPS);
+            [x, r, dt] = obj.interpolateSegment(tStart, tEnd, obj.LINEAR_CART_VEL, obj.JOG_STEPS);
             [q, v, t] = obj.GenerateRMRCSegment(x, r, dt, qs);
         end
 
@@ -191,7 +192,7 @@ classdef TrajectoryGenerator < handle
             q = jtraj(qs, qf, obj.JOG_STEPS);
 
             % time increment, based on largest joint error
-            dt = max(abs(dq)) / obj.JOG_VEL / obj.JOG_STEPS;
+            dt = max(abs(dq)) / obj.JOINT_JOG_VEL / obj.JOG_STEPS;
             t = zeros(obj.JOG_STEPS, 1);
             for i = 1:obj.JOG_STEPS
                 t(i) = i*dt;
