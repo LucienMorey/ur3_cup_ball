@@ -158,6 +158,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/estop
   scripts/servo_control
+  script/joystick
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
