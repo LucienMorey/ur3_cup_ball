@@ -191,7 +191,7 @@ classdef TrajectoryGenerator < handle
             q = jtraj(qs, qf, obj.JOG_STEPS);
 
             % time increment, based on largest joint error
-            dt = max(dq) / obj.JOG_VEL / obj.JOG_STEPS;
+            dt = max(abs(dq)) / obj.JOG_VEL / obj.JOG_STEPS;
             t = zeros(obj.JOG_STEPS, 1);
             for i = 1:obj.JOG_STEPS
                 t(i) = i*dt;
