@@ -199,10 +199,9 @@ classdef TrajectoryGenerator < handle
 
             % calc velocity based on constant time increment
             v = zeros(obj.JOG_STEPS, 6);
-            for k = 1:6
-                for i = 1:obj.JOG_STEPS - 1
-                    v(i, k) = (q(i+1, k) - q(i, k)) / dt;
-                end
+            
+            for i = 1:obj.JOG_STEPS - 1
+                v(i, :) = (q(i+1, :) - q(i, :)) ./ dt;
             end
         end
 
