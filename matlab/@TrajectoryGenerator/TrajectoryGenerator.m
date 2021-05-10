@@ -102,7 +102,8 @@ classdef TrajectoryGenerator < handle
             end
 
             % get transform of first point
-            T =  transl(xyz(1, :)') * rpy2tr(rpy(1,:));
+            %use rpy2tr
+            T =  transl(xyz(1,:)) * rpy2tr(rpy(1, :));
 
             % initial joint state
             qMatrix(1,:) = obj.robot.ikcon(T, initialguess);

@@ -3,7 +3,7 @@
 
 
 % x0 -> initial position [x, y] in-plane
-% v0 -> initial velocity [x, y] in-plane
+% v0 -> initial velocity magnitude in-plane
 % d  -> horizontal displacement from launch->goal in-plane
 % h  -> height of target (cup)
 % e  -> coefficient of resitution
