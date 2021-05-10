@@ -11,7 +11,11 @@ classdef GUI < matlab.apps.AppBase & handle
         SUBSCIRIBER_TIMEOUT = 0.5;
         CARTESIAN_JOG_DIST =0.2;
         UR3_JOINT_NAMES = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
-
+        PROJECTILE_MASS = 0.0027;
+        PROJETILE_DIAMETER = 0.04;
+        COEFFICENT_OF_DRAG = 0;
+        COEFFICIENT_OF_RESTITUTION = 0.86;
+        LAUNCH_POSITION = [0.1, 0.0, 0.35];
     end
     
     properties(Access = private)
@@ -19,6 +23,9 @@ classdef GUI < matlab.apps.AppBase & handle
 
         robotPlot_h;
         trajPlot_h;
+        trajLine_h;
+        trajXs;
+        trajYs;
         
         cupLocationXField
         cupLocationYField
@@ -52,6 +59,7 @@ classdef GUI < matlab.apps.AppBase & handle
         
         ur3;
         trajectoryGenerator;
+        projectileGenerator;
     end
     
     methods
@@ -80,8 +88,11 @@ classdef GUI < matlab.apps.AppBase & handle
             startQ = obj.ur3.model.ikcon(reload_position, ones(1,6));
 
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
+            obj.cupRobotFrame = NaN(4);
 
             obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, throw_position, 0.1,0.45, reload_position);
+            obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
+
             
         end
     end
@@ -124,10 +135,26 @@ classdef GUI < matlab.apps.AppBase & handle
                 rotm = quat2rotm([transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W]);
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                %add arbitrary height for cup height
+                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + 0.1
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
                 obj.cupLocationZField.String = num2str(obj.cupRobotFrame(3,4));
+
+                v0 = 1.0;
+
+                [vRequired, xi, dx, h, theta] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', 1, v0);
+
+                % get initial velocity for plot
+                vi = v0 * [cos(theta), sin(theta)];
+
+                % 2D simulation of projectile
+                [x, y, t] = obj.projectileGenerator.simulatep(xi, vi, 1);
+                axes(obj.trajPlot_h);
+                obj.trajLine_h.XData = x;
+                obj.trajLine_h.YData = y;
+                drawnow();
 
             % catch broken tf tree
             catch
@@ -211,15 +238,20 @@ classdef GUI < matlab.apps.AppBase & handle
             daspect(obj.robotPlot_h,[1 1 1]);
 
             % PLOT 2
-            trajPlot_h = subplot(1, 2, 2);
-            grid(trajPlot_h, 'on');
-            title(trajPlot_h, 'Trajectory 2D x,y');
-            xlabel(trajPlot_h, 'X (m)');
-            ylabel(trajPlot_h, 'Y (m)');
-            daspect(trajPlot_h, [1 1 1]);
+            obj.trajPlot_h = subplot(1, 2, 2);
+            
+            obj.trajXs = [0];
+            obj.trajYs = [0];
+
+            obj.trajLine_h = plot(obj.trajPlot_h, obj.trajXs, obj.trajYs);
+            grid(obj.trajPlot_h, 'on');
+            title(obj.trajPlot_h, 'Trajectory 2D x,y');
+            xlabel(obj.trajPlot_h, 'X (m)');
+            ylabel(obj.trajPlot_h, 'Y (m)');
+            daspect(obj.trajPlot_h, [1 1 1]);
             set(gcf,'color','w');
-            xlim(trajPlot_h, [0 1.2]);
-            ylim(trajPlot_h, [0 1.2])
+            xlim(obj.trajPlot_h, [0 1.2]);
+            ylim(obj.trajPlot_h, [0 1.2])
             pos = get(gca, 'OuterPosition');
             set(gca, 'OuterPosition', pos);
             
