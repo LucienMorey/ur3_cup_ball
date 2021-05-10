@@ -17,6 +17,9 @@ classdef GUI < matlab.apps.AppBase & handle
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.86;
         LAUNCH_POSITION = [0.1, 0.0, 0.35];
+        LAUNCH_VELOCITY_MAGNITUDE = 1.0;
+        DESIRED_NUMBER_OF_BOUNCES = 1;
+        HEIGHT_OF_CUP = 0.1;
     end
     
     properties(Access = private)
@@ -172,33 +175,37 @@ classdef GUI < matlab.apps.AppBase & handle
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + 0.1
+                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + obj.HEIGHT_OF_CUP;
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
                 obj.cupLocationZField.String = num2str(obj.cupRobotFrame(3,4));
 
-                v0 = 1.0;
-
-                [vRequired, xi, dx, h, theta] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', 1, v0);
-
-                % get initial velocity for plot
-                vi = v0 * [cos(theta), sin(theta)];
-
-                % 2D simulation of projectile
-                [x, y, t] = obj.projectileGenerator.simulatep(xi, vi, 1);
-                axes(obj.trajPlot_h);
-                obj.trajLine_h.XData = x;
-                obj.trajLine_h.YData = y;
-                drawnow();
-
-            % catch broken tf tree
             catch
                 disp('tf error check for joined trees');
                 % set ui element info
                 obj.cupLocationXField.String = 'error';
                 obj.cupLocationYField.String = 'error';
                 obj.cupLocationZField.String = 'error';
+                return
+            end
+
+            try
+                [vThrow, 2DLaunchAngle] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
+
+                % get initial velocity for plot
+                vInitial2D = norm(vThrow) * [cos(2DLaunchAngle), sin(2DLaunchAngle)];
+
+                % 2D simulation of projectile
+                % [x, y, t] = obj.projectileGenerator.simulatep(xi, vInitial2D, 1);
+                % axes(obj.trajPlot_h);
+                % obj.trajLine_h.XData = x;
+                % obj.trajLine_h.YData = y;
+                % drawnow();
+
+            % catch broken tf tree
+            catch
+                disp('unable to calculate and plot trajectory');
             end
         end
 

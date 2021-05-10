@@ -22,7 +22,7 @@ classdef Projectile < handle
             obj.cor  = cor_;
         end
         
-        function [vi, xi, dx, h, theta] = calcLaunch(obj, s, e, n, v0_)
+        function [vi, theta] = calcLaunch(obj, s, e, n, v0_)
             % s -> launch position [x, y, z]
             % e -> end position [x, y, z]
             % n -> number of bounces
