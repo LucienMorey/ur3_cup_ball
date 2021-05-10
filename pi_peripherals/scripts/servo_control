@@ -41,7 +41,7 @@ if __name__ == "__main__":
     #main function
     while  not rospy.is_shutdown():
         rospy.spin()
-
+    go.stop()
 
 
 
