@@ -10,6 +10,7 @@ classdef GUI < matlab.apps.AppBase & handle
     properties(Constant)
         SUBSCIRIBER_TIMEOUT = 0.5;
         CARTESIAN_JOG_DIST =0.2;
+        JOINT_JOG_ANGLE = pi/36;
         UR3_JOINT_NAMES = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
         PROJECTILE_MASS = 0.0027;
         PROJETILE_DIAMETER = 0.04;
@@ -48,18 +49,18 @@ classdef GUI < matlab.apps.AppBase & handle
         yMinusButton;
         zPlusButton;
         zMinusButton;
-        q1Plus;
-        q1Minus;
-        q2Plus;
-        q2Minus;
-        q3Plus;
-        q3Minus;
-        q4Plus;
-        q4Minus;
-        q5Plus;
-        q5Minus;
-        q6Plus;
-        q6Minus;
+        q1PlusButton;
+        q1MinusButton;
+        q2PlusButton;
+        q2MinusButton;
+        q3PlusButton;
+        q3MinusButton;
+        q4PlusButton;
+        q4MinusButton;
+        q5PlusButton;
+        q5MinusButton;
+        q6PlusButton;
+        q6MinusButton;
 
         gamePadJog;
 
@@ -231,6 +232,66 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.cartesianJog([0,0, -obj.CARTESIAN_JOG_DIST]);
         end
 
+        function onQ1PlusButton(obj,event, app)
+            disp('jog q1Plus');
+            obj.jointJog(1,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ1MinusButton(obj,event, app)
+            disp('jog q1Minus');
+            obj.jointJog(1,-obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ2PlusButton(obj,event, app)
+            disp('jog q2Plus');
+            obj.jointJog(2,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ2MinusButton(obj,event, app)
+            disp('jog q2Minus');
+            obj.jointJog(2,-obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ3PlusButton(obj,event, app)
+            disp('jog q3Plus');
+            obj.jointJog(3,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ3MinusButton(obj,event, app)
+            disp('jog q3Minus');
+            obj.jointJog(3,-obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ4PlusButton(obj,event, app)
+            disp('jog q4Plus');
+            obj.jointJog(4,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ4MinusButton(obj,event, app)
+            disp('jog q4Minus');
+            obj.jointJog(4,-obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ5PlusButton(obj,event, app)
+            disp('jog q5Plus');
+            obj.jointJog(5,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ5MinusButton(obj,event, app)
+            disp('jog q1Minus');
+            obj.jointJog(5,-obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ6PlusButton(obj,event, app)
+            disp('jog q6Plus');
+            obj.jointJog(6,obj.JOINT_JOG_ANGLE);
+        end
+
+        function onQ6MinusButton(obj,event, app)
+            disp('jog q6Minus');
+            obj.jointJog(6,-obj.JOINT_JOG_ANGLE);
+        end
+
         function cartesianJog(obj, direction)
             axes(obj.robotPlot_h);
 
@@ -242,6 +303,26 @@ classdef GUI < matlab.apps.AppBase & handle
                 % make the traj message
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
 
+                try
+                    sendGoal(obj.actionClient, obj.trajGoal);
+                catch
+                    disp('Action sever error');
+                end
+            end
+        end
+
+        function jointJog(obj, jointNumber, jogAmount)
+            axes(obj.robotPlot_h);
+
+            q = obj.getJointState();
+            if ~isempty(q)
+
+                qDesired = zeros(1,size(q,2));
+                qDesired(1,jointNumber) = jogAmount;
+
+                [qMatrix, vMatrix, tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
+                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix)
                 try
                     sendGoal(obj.actionClient, obj.trajGoal);
                 catch
@@ -390,23 +471,35 @@ classdef GUI < matlab.apps.AppBase & handle
             %Callback
 
             %create joint jog buttons
-            obj.q1Plus = uicontrol('String', 'q1+', 'position', [1300 120 100 30]);
-            obj.q1Minus = uicontrol('String', 'q1-', 'position', [1400 120 100 30]);
+            obj.q1PlusButton = uicontrol('String', 'q1+', 'position', [1300 120 100 30]);
+            obj.q1PlusButton.Callback = @obj.onQ1PlusButton;
+            obj.q1MinusButton = uicontrol('String', 'q1-', 'position', [1400 120 100 30]);
+            obj.q1MinusButton.Callback = @obj.onQ1MinusButton;
 
-            obj.q2Plus = uicontrol('String', 'q2+', 'position', [1300 90 100 30]);
-            obj.q2Minus = uicontrol('String', 'q2-', 'position', [1400 90 100 30]);
+            obj.q2PlusButton = uicontrol('String', 'q2+', 'position', [1300 90 100 30]);
+            obj.q2PlusButton.Callback = @obj.onQ2PlusButton;
+            obj.q2MinusButton = uicontrol('String', 'q2-', 'position', [1400 90 100 30]);
+            obj.q2MinusButton.Callback = @obj.onQ2MinusButton;
 
-            obj.q3Plus = uicontrol('String', 'q3+', 'position', [1300 60 100 30]);
-            obj.q3Minus = uicontrol('String', 'q3-', 'position', [1400 60 100 30]);
+            obj.q3PlusButton = uicontrol('String', 'q3+', 'position', [1300 60 100 30]);
+            obj.q3PlusButton.Callback = @obj.onQ3PlusButton;
+            obj.q3MinusButton = uicontrol('String', 'q3-', 'position', [1400 60 100 30]);
+            obj.q3MinusButton.Callback = @obj.onQ3MinusButton;
 
-            obj.q4Plus = uicontrol('String', 'q4+', 'position', [1550 120 100 30]);
-            obj.q4Minus = uicontrol('String', 'q4-', 'position', [1650 120 100 30]);
+            obj.q4PlusButton = uicontrol('String', 'q4+', 'position', [1550 120 100 30]);
+            obj.q4PlusButton.Callback = @obj.onQ4PlusButton;
+            obj.q4MinusButton = uicontrol('String', 'q4-', 'position', [1650 120 100 30]);
+            obj.q4MinusButton.Callback = @obj.onQ4MinusButton;
 
-            obj.q5Plus = uicontrol('String', 'q5+', 'position', [1550 90 100 30]);
-            obj.q5Minus = uicontrol('String', 'q5-', 'position', [1650 90 100 30]);
+            obj.q5PlusButton = uicontrol('String', 'q5+', 'position', [1550 90 100 30]);
+            obj.q5PlusButton.Callback = @obj.onQ5PlusButton;
+            obj.q5MinusButton = uicontrol('String', 'q5-', 'position', [1650 90 100 30]);
+            obj.q5MinusButton.Callback = @obj.onQ5MinusButton;
 
-            obj.q6Plus = uicontrol('String', 'q6+', 'position', [1550 60 100 30]);
-            obj.q6Minus = uicontrol('String', 'q6-', 'position', [1650 60 100 30]);
+            obj.q6PlusButton = uicontrol('String', 'q6+', 'position', [1550 60 100 30]);
+            obj.q6PlusButton.Callback = @obj.onQ6PlusButton;
+            obj.q6MinusButton = uicontrol('String', 'q6-', 'position', [1650 60 100 30]);
+            obj.q6MinusButton.Callback = @obj.onQ6MinusButton;
 
 
 
