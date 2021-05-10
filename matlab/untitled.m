@@ -5,13 +5,13 @@ robot = UR3m(trotz(pi/2));
 q = [0 -pi/2 -pi/6 -pi/4 0 0];
 
 reload_position = transl(-0.1,0,0.55);
-throw_position = transl(0,0.2,0.3); 
+throw_position = transl(0.2,-0.2,0.45); 
 startQ = robot.model.ikcon(reload_position, ones(1,6));
 
 robot.model.animate(q);
 view(22, 15);
 
-trajgen = TrajectoryGenerator(robot.model, throw_position, 0.3, 0.3, reload_position);
+trajgen = TrajectoryGenerator(robot.model, throw_position, 0.2, 0.1, reload_position);
 n = [1; 0; 0];
 n = n/norm(n);
 [qMatrix,vMatrix,tMatrix] = trajgen.GenerateThrow(n);

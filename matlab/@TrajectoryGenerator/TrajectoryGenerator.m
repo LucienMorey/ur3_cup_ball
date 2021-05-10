@@ -13,9 +13,9 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 0.01; % tune this if not moving well
+        EPSILON = 0.006; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
-        STEPS = 50;     % more steps make the movement better
+        STEPS = 75;     % more steps make the movement better
         JOG_VEL = 0.1;
         JOG_STEPS = 30; % more steps make the movement better
     end
@@ -134,14 +134,17 @@ classdef TrajectoryGenerator < handle
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
+                %m = 0;
 
                 % check if a damped least squares solution is required
                 if m < obj.EPSILON
                     % least squares
-                    lambda = (1 - m/obj.EPSILON)*1E-1;
+                    lambda = (1 - (m/obj.EPSILON)^2)*0.02;
+                    disp('dls');
                 else
                     % not required
                     lambda = 0;
+                    disp('nodls');
                 end
                 
                 % apply least squares if required and invert jacobian
