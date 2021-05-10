@@ -267,28 +267,28 @@ classdef GUI < matlab.apps.AppBase & handle
 
             %BUTTONS
             %create fire button
-            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 120 100 30]);
+            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
             %attach button callback
             %CALLBACK
 
             %create Open Servo button
-            obj.openButton = uicontrol('String', 'Open Servo', 'position', [400 80 100 30]);
+            obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
             %attach button callback
             obj.openButton.Callback = @obj.onOpenServoButton;
 
 
             %create Close servo button
-            obj.closeButton = uicontrol('String', 'Close Servo', 'position', [510 120 100 30]);
+            obj.closeButton = uicontrol('String', 'Close Servo', 'position', [510 80 100 30]);
             %attach button callback
             obj.closeButton.Callback = @obj.onCloseServoButton;
 
             %create return home button
-            obj.homeButton = uicontrol('String', 'Return Home', 'position', [510 80 100 30]);
+            obj.homeButton = uicontrol('String', 'Return Home', 'position', [620 120 100 30]);
             %attach button callback
             %CALLBACK
 
             %create get Cup Pose button button
-            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [620 120 100 30]);
+            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [400 120 100 30]);
             %attach button callback
             obj.getCupPoseButton.Callback = @obj.onGetCupPoseButton;
 
