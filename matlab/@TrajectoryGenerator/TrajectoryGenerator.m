@@ -13,9 +13,9 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 0.01; % tune this if not moving well
+        EPSILON = 0.006; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
-        STEPS = 50;     % more steps make the movement better
+        STEPS = 75;     % more steps make the movement better
         JOG_VEL = 0.1;
         JOG_STEPS = 30; % more steps make the movement better
     end
@@ -134,14 +134,17 @@ classdef TrajectoryGenerator < handle
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
+                %m = 0;
 
                 % check if a damped least squares solution is required
                 if m < obj.EPSILON
                     % least squares
-                    lambda = (1 - m/obj.EPSILON)*1E-1;
+                    lambda = (1 - (m/obj.EPSILON)^2)*0.02;
+                    disp('dls');
                 else
                     % not required
                     lambda = 0;
+                    disp('nodls');
                 end
                 
                 % apply least squares if required and invert jacobian
@@ -178,7 +181,7 @@ classdef TrajectoryGenerator < handle
             [q, v, t] = obj.GenerateRMRCSegment(x, r, dt, qs);
         end
 
-        function [q] = jjog(obj, qs, dq)
+        function [q, v, t] = jjog(obj, qs, dq)
             % qs -> current joint state
             % dq -> delta for each joint
             qf = qs + dq;
@@ -186,6 +189,21 @@ classdef TrajectoryGenerator < handle
             % Since this is all joint-space, not going to rmrc
             % quintic polynomial interpolation
             q = jtraj(qs, qf, obj.JOG_STEPS);
+
+            % time increment, based on largest joint error
+            dt = max(dq) / obj.JOG_VEL / obj.JOG_STEPS;
+            t = zeros(obj.JOG_STEPS, 1);
+            for i = 1:obj.JOG_STEPS
+                t(i) = i*dt;
+            end
+
+            % calc velocity based on constant time increment
+            v = zeros(obj.JOG_STEPS, 6);
+            for k = 1:6
+                for i = 1:obj.JOG_STEPS - 1
+                    v(i, k) = (q(i+1, k) - q(i, k)) / dt;
+                end
+            end
         end
 
         function [xMatrix, thetaMatrix, tMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, steps)
