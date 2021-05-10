@@ -181,7 +181,7 @@ classdef TrajectoryGenerator < handle
             [q, v, t] = obj.GenerateRMRCSegment(x, r, dt, qs);
         end
 
-        function [q] = jjog(obj, qs, dq)
+        function [q, v, t] = jjog(obj, qs, dq)
             % qs -> current joint state
             % dq -> delta for each joint
             qf = qs + dq;
@@ -189,6 +189,21 @@ classdef TrajectoryGenerator < handle
             % Since this is all joint-space, not going to rmrc
             % quintic polynomial interpolation
             q = jtraj(qs, qf, obj.JOG_STEPS);
+
+            % time increment, based on largest joint error
+            dt = max(dq) / obj.JOG_VEL / obj.JOG_STEPS;
+            t = zeros(obj.JOG_STEPS, 1);
+            for i = 1:obj.JOG_STEPS
+                t(i) = i*dt;
+            end
+
+            % calc velocity based on constant time increment
+            v = zeros(obj.JOG_STEPS, 6);
+            for k = 1:6
+                for i = 1:obj.JOG_STEPS - 1
+                    v(i, k) = (q(i+1, k) - q(i, k)) / dt;
+                end
+            end
         end
 
         function [xMatrix, thetaMatrix, tMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, steps)
