@@ -1,0 +1,47 @@
+
+import pygame as pg
+import time
+import rospy
+import std_msgs
+
+axis = [0,0,0,0]
+#initiate pygame
+pg.init()
+pg.display.init()
+#initiate the joystic(s)
+pg.joystick.init()
+#create a joystic
+joystick = pg.joystick.Joystick(0)
+joystick.init()
+
+#joystick axis stuff
+axes = joystick.get_numaxes()
+#print(str(axes))
+
+#Initiate ROS Node
+#rospy.init_node('Joystick')
+
+#joy_pub = rospy.Publisher('Joystick')
+
+if __name__ == "__main__":
+    while True: #for debugging purposes
+    #while not rospy.is_shutdown: #for live program
+
+        for i in range(axes):
+            pg.event.pump()
+            axis[i] = joystick.get_axis(i)
+            #print(str(axis), 'axis',str(i))
+            time.sleep(.05)
+            print("axis 0 ", str(axis[0]), " axis 1 ",str(axis[1]), " axis 2: " ,str(axis[2]), " axis 3: " ,str(axis[3]))
+
+#Left Stick
+#Axis 0 = Left -1 to Right +1
+#Axis 1 = Top -1 to Bottom +1
+#
+#Right Stick
+#Axis 2 = Left -1 to Right +1
+#Axis 3 = Top -1 to Bottom +1
+
+#class JoyStick:
+#    define for i in range (joystick_count)
+#!/usr/bin/env python#!/usr/bin/env python
