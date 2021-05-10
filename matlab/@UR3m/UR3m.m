@@ -51,8 +51,8 @@ classdef UR3m < handle
             L(6).qlim = [-360 360]*pi/180;
             
             % offsets
-            L(2).offset = -pi/2;
-            L(4).offset = -pi/2;
+            %L(2).offset = -pi/2;
+            %L(4).offset = -pi/2;
 
             % Create the robot with serial link
             obj.model = SerialLink(L);

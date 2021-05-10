@@ -13,11 +13,11 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 1.0;
+        EPSILON = 0.01; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
-        STEPS = 50;
+        STEPS = 50;     % more steps make the movement better
         JOG_VEL = 0.1;
-        JOG_STEPS = 10;
+        JOG_STEPS = 30; % more steps make the movement better
     end
     
     methods
@@ -102,7 +102,7 @@ classdef TrajectoryGenerator < handle
             end
 
             % get transform of first point
-            T =  [ rpy2r(rpy(1, :)), xyz(1, :)'; zeros(1,3), 1 ];
+            T =  transl(xyz(1, :)') * rpy2tr(rpy(1,:));
 
             % initial joint state
             qMatrix(1,:) = obj.robot.ikcon(T, initialguess);
@@ -137,7 +137,7 @@ classdef TrajectoryGenerator < handle
                 % check if a damped least squares solution is required
                 if m < obj.EPSILON
                     % least squares
-                    lambda = (1 - m/obj.EPSILON)*5E-2;
+                    lambda = (1 - m/obj.EPSILON)*1E-1;
                 else
                     % not required
                     lambda = 0;
@@ -166,31 +166,42 @@ classdef TrajectoryGenerator < handle
 
         end
 
-        function [q, v, t] = jog(obj, qs, d)
+        function [q, v, t] = cjog(obj, qs, d)
             % dir should be unit vector in direction of movement
             % start/end transformy
-            t_start = obj.robot.fkine(qs)
-            t_end   = transl(d) * t_start
+            tStart = obj.robot.fkine(qs);
+            tEnd   = transl(d) * tStart;
 
             % make xyz, rpy path
-            [x, r, dt] = obj.interpolateSegment(t_start, t_end, obj.JOG_VEL, obj.JOG_STEPS);
+            [x, r, dt] = obj.interpolateSegment(tStart, tEnd, obj.JOG_VEL, obj.JOG_STEPS);
             [q, v, t] = obj.GenerateRMRCSegment(x, r, dt, qs);
+        end
 
+        function [q] = jjog(obj, qs, dq)
+            % qs -> current joint state
+            % dq -> delta for each joint
+            qf = qs + dq;
+
+            % Since this is all joint-space, not going to rmrc
+            % quintic polynomial interpolation
+            q = jtraj(qs, qf, obj.JOG_STEPS);
         end
 
         function [xMatrix, thetaMatrix, tMatrix] = interpolateSegment(obj, segmentStart, segmentEnd, velocityMagnitude, steps)
             
+            % get the rpy increment for each step
+            startRPY = tr2rpy(segmentStart(1:3,1:3))';
+            dr = (tr2rpy(segmentEnd(1:3,1:3))' - startRPY) / steps;
+
+            % get the xyz increment for each steps
+            startXYZ = segmentStart(1:3,4);
+            dx = (segmentEnd(1:3,4) - startXYZ) / steps;
+
             % segment delta x,y,z
             seg = segmentEnd(1:3,4) - segmentStart(1:3,4);
-            
-            % segment length
-            segMagnitude = norm(seg);
-            
-            % segment unit vector
-            segDirection = seg / segMagnitude;
 
             % time interval for each step
-            dt = segMagnitude / velocityMagnitude / steps;
+            dt = norm(seg) / velocityMagnitude / steps;
 
             % xmatrix -> x,y,z positions of segment
             % thetaMatrix -> rpy of segment
@@ -198,15 +209,10 @@ classdef TrajectoryGenerator < handle
             thetaMatrix = zeros(steps, 3);
             tMatrix     = repmat(dt, steps, 1);
 
-            % get the rpy increment for each step
-            startRPY = tr2rpy(segmentStart(1:3,1:3))';
-            endRPY = tr2rpy(segmentEnd(1:3,1:3))';
-            rpyIncrement = (endRPY - startRPY) / steps;
-
             % interpolate translation and rotation
             for i = 1:steps
-                xMatrix(i, :)     = (segmentStart(1:3,4) + (i-1)*(velocityMagnitude*dt)*segDirection)';
-                thetaMatrix(i, :) = (startRPY + (i-1)*rpyIncrement)';
+                xMatrix(i, :)     = (startXYZ + i*dx)';
+                thetaMatrix(i, :) = (startRPY + i*dr)';
             end
         end
 
