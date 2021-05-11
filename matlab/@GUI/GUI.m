@@ -27,9 +27,11 @@ classdef GUI < matlab.apps.AppBase & handle
 
         robotPlot_h;
         trajPlot_h;
-        trajLine_h;
-        trajXs;
-        trajYs;
+        
+        traj2DLine_h;
+        traj3DLine_h;
+        cupLocation2D_h;
+        cupLocation3D_h;
         
         cupLocationXField
         cupLocationYField
@@ -200,8 +202,13 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % 3d plot
                 axes(obj.robotPlot_h)
-                plot3(xyz(:, 1), xyz(:, 2), xyz(:,3));
-                plot3(cup(1), cup(2), cup(3), 'ro');
+                obj.traj3DLine_h.XData = xyz(:, 1);
+                obj.traj3DLine_h.YData = xyz(:, 2);
+                obj.traj3DLine_h.ZData = xyz(:, 3);
+
+                obj.cupLocation3D_h.XData = cup(1);
+                obj.cupLocation3D_h.YData = cup(2);
+                obj.cupLocation3D_h.ZData = cup(3);
 
                 % calculate 2d points from 3d ones
                 xPoints = sqrt(xyz(:, 1).^2 + xyz(:, 2).^2);
@@ -211,8 +218,13 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % 2D plot
                 axes(obj.trajPlot_h);
-                plot(xPoints, yPoints);
-                plot(cup2dx, cup2dy, 'ro');
+                obj.traj2DLine_h.XData = xPoints;
+                obj.traj2DLine_h.YData = yPoints;
+
+                obj.cupLocation2D_h.XData = cup2dx;
+                obj.cupLocation2D_h.YData = cup2dy;
+
+                drawnow();
 
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location
@@ -391,16 +403,18 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3 = UR3m(trotz(pi/2));
 
             % set view properties
+            hold(obj.robotPlot_h, 'on');
             view(obj.robotPlot_h, 30, 20);
             daspect(obj.robotPlot_h,[1 1 1]);
 
+            obj.traj3DLine_h = plot3([0], [0], [0]);
+            obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
+
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
-            
-            obj.trajXs = [0];
-            obj.trajYs = [0];
 
-            obj.trajLine_h = plot(obj.trajPlot_h, obj.trajXs, obj.trajYs);
+            obj.traj2DLine_h = plot([0], [0]);
+            hold(obj.trajPlot_h, 'on');
             grid(obj.trajPlot_h, 'on');
             title(obj.trajPlot_h, 'Trajectory 2D x,y');
             xlabel(obj.trajPlot_h, 'X (m)');
@@ -411,6 +425,8 @@ classdef GUI < matlab.apps.AppBase & handle
             ylim(obj.trajPlot_h, [0 1.2])
             pos = get(gca, 'OuterPosition');
             set(gca, 'OuterPosition', pos);
+
+            obj.cupLocation2D_h = plot([0], [0], 'ro');
             
             %CUP LOCATION DATA FIELDS
             obj.cupLocationXLabel = uicontrol('Style', 'text', 'String', 'x-goal', 'position', [20 120 100 15]);
