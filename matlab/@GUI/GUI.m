@@ -224,12 +224,15 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.cupLocation2D_h.XData = cup2dx;
                 obj.cupLocation2D_h.YData = cup2dy;
 
-                drawnow();
-
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow);
                 % calculate trajectory
-
+                axes(obj.robotPlot_h);
+                obj.robotLine_h.XData = xMatrix(1,:);
+                obj.robotLine_h.YData = xMatrix(2,:);
+                obj.robotLine_h.ZData = xMatrix(3,:);
+                drawnow();
 
             % catch broken tf tree
             catch
@@ -409,6 +412,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
             obj.traj3DLine_h = plot3([0], [0], [0]);
             obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
+            obj.robotLine_h = plot3([0],[0], [0]);
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
