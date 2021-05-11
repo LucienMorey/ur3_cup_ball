@@ -196,7 +196,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 return
             end
 
-            % try
+            try
                 % cup position
                 cup = obj.cupRobotFrame(1:3,4)';
 
@@ -239,9 +239,9 @@ classdef GUI < matlab.apps.AppBase & handle
                 drawnow();
 
             % catch broken tf tree
-            % catch
-            %     disp('unable to calculate and plot trajectory');
-            % end
+            catch
+                disp('unable to calculate and plot trajectory');
+            end
         end
 
         function onFireButton(obj, app, event)
