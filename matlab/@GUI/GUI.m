@@ -42,7 +42,7 @@ classdef GUI < matlab.apps.AppBase & handle
         openButton
         closeButton
         homeButton
-        getCupPoseButton
+        calcTrajButton
         fireButton;
         abortButton;
         exitButton;
@@ -155,7 +155,7 @@ classdef GUI < matlab.apps.AppBase & handle
             end
         end
 
-        function onGetCupPoseButton(obj, app, event)
+        function onCalcTrajButton(obj, app, event)
             % check for joined tf tree
             try
                 % transform origin of cup to robot frame
@@ -191,17 +191,33 @@ classdef GUI < matlab.apps.AppBase & handle
             end
 
             try
-                [vThrow, 2DLaunchAngle] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
+                % cup position
+                cup = obj.cupRobotFrame(1:3,4)';
 
-                % get initial velocity for plot
-                vInitial2D = norm(vThrow) * [cos(2DLaunchAngle), sin(2DLaunchAngle)];
+                % initial velocity & simulate
+                [vThrow] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
+                xyz = obj.projectileGenerator.simulateP(obj.LAUNCH_POSITION, vThrow, obj.DESIRED_NUMBER_OF_BOUNCES);
 
-                % 2D simulation of projectile
-                % [x, y, t] = obj.projectileGenerator.simulatep(xi, vInitial2D, 1);
-                % axes(obj.trajPlot_h);
-                % obj.trajLine_h.XData = x;
-                % obj.trajLine_h.YData = y;
-                % drawnow();
+                % 3d plot
+                axes(obj.robotPlot_h)
+                plot3(xyz(:, 1), xyz(:, 2), xyz(:,3));
+                plot3(cup(1), cup(2), cup(3), 'ro');
+
+                % calculate 2d points from 3d ones
+                xPoints = sqrt(xyz(:, 1).^2 + xyz(:, 2).^2);
+                yPoints = xyz(:, 3);
+                cup2dx = sqrt(cup(1)^2 + cup(2)^2);
+                cup2dy = cup(3);
+
+                % 2D plot
+                axes(obj.trajPlot_h);
+                plot(xPoints, yPoints);
+                plot(cup2dx, cup2dy, 'ro');
+
+                % SEND CALCULATED TRAJ
+                % using velocity vector and throw location
+                % calculate trajectory
+
 
             % catch broken tf tree
             catch
@@ -429,9 +445,9 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.homeButton.Callback = @obj.onHomeButton;
 
             %create get Cup Pose button button
-            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [400 120 100 30]);
+            obj.calcTrajButton = uicontrol('String', 'Calc Traj', 'position', [400 120 100 30]);
             %attach button callback
-            obj.getCupPoseButton.Callback = @obj.onGetCupPoseButton;
+            obj.calcTrajButton.Callback = @obj.onCalcTrajButton;
 
             %create abort button
             obj.abortButton = uicontrol('String', 'Abort', 'position', [620 80 100 30]);
