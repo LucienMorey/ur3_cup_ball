@@ -16,7 +16,11 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.86;
-        LAUNCH_POSITION = [0.1, 0.0, 0.35];
+        LAUNCH_POSITION = transl(0,0.3,0.3);
+        RELOAD_POSITION = transl(-0.1,0,0.55);
+        LAUNCH_VELOCITY_MAGNITUDE = 1.0;
+        DESIRED_NUMBER_OF_BOUNCES = 1;
+        HEIGHT_OF_CUP = 0.1;
     end
     
     properties(Access = private)
@@ -24,9 +28,12 @@ classdef GUI < matlab.apps.AppBase & handle
 
         robotPlot_h;
         trajPlot_h;
-        trajLine_h;
-        trajXs;
-        trajYs;
+        
+        traj2DLine_h;
+        traj3DLine_h;
+        cupLocation2D_h;
+        cupLocation3D_h;
+        robotLine_h
         
         cupLocationXField
         cupLocationYField
@@ -39,7 +46,7 @@ classdef GUI < matlab.apps.AppBase & handle
         openButton
         closeButton
         homeButton
-        getCupPoseButton
+        calcTrajButton
         fireButton;
         abortButton;
         exitButton;
@@ -75,6 +82,9 @@ classdef GUI < matlab.apps.AppBase & handle
         ur3;
         trajectoryGenerator;
         projectileGenerator;
+        qMatrix;
+        vMatrix;
+        tMatrix;
     end
     
     methods
@@ -96,16 +106,11 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
             obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
             obj.tree = rostf;
-    
-            reload_position = transl(-0.1,0,0.55);
-            throw_position = transl(0,0.3,0.3);
-            
-            startQ = obj.ur3.model.ikcon(reload_position, ones(1,6));
 
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, throw_position, 0.1,0.45, reload_position);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.LAUNCH_POSITION, 0.1,0.45, obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -152,7 +157,7 @@ classdef GUI < matlab.apps.AppBase & handle
             end
         end
 
-        function onGetCupPoseButton(obj, app, event)
+        function onCalcTrajButton(obj, app, event)
             % check for joined tf tree
             try
                 % transform origin of cup to robot frame
@@ -172,33 +177,76 @@ classdef GUI < matlab.apps.AppBase & handle
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + 0.1
+                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + obj.HEIGHT_OF_CUP;
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
                 obj.cupLocationZField.String = num2str(obj.cupRobotFrame(3,4));
 
-                v0 = 1.0;
-
-                [vRequired, xi, dx, h, theta] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION, obj.cupRobotFrame(1:3,4)', 1, v0);
-
-                % get initial velocity for plot
-                vi = v0 * [cos(theta), sin(theta)];
-
-                % 2D simulation of projectile
-                [x, y, t] = obj.projectileGenerator.simulatep(xi, vi, 1);
-                axes(obj.trajPlot_h);
-                obj.trajLine_h.XData = x;
-                obj.trajLine_h.YData = y;
-                drawnow();
-
-            % catch broken tf tree
             catch
                 disp('tf error check for joined trees');
                 % set ui element info
                 obj.cupLocationXField.String = 'error';
                 obj.cupLocationYField.String = 'error';
                 obj.cupLocationZField.String = 'error';
+                return
+            end
+
+            try
+                % cup position
+                cup = obj.cupRobotFrame(1:3,4)';
+
+                % initial velocity & simulate
+                [vThrow] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION(1:3,4)', obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
+                xyz = obj.projectileGenerator.simulateP(obj.LAUNCH_POSITION(1:3,4)', vThrow, obj.DESIRED_NUMBER_OF_BOUNCES);
+
+                % 3d plot
+                axes(obj.robotPlot_h)
+                obj.traj3DLine_h.XData = xyz(:, 1);
+                obj.traj3DLine_h.YData = xyz(:, 2);
+                obj.traj3DLine_h.ZData = xyz(:, 3);
+
+                obj.cupLocation3D_h.XData = cup(1);
+                obj.cupLocation3D_h.YData = cup(2);
+                obj.cupLocation3D_h.ZData = cup(3);
+
+                % calculate 2d points from 3d ones
+                xPoints = sqrt(xyz(:, 1).^2 + xyz(:, 2).^2);
+                yPoints = xyz(:, 3);
+                cup2dx = sqrt(cup(1)^2 + cup(2)^2);
+                cup2dy = cup(3);
+
+                % 2D plot
+                axes(obj.trajPlot_h);
+                obj.traj2DLine_h.XData = xPoints;
+                obj.traj2DLine_h.YData = yPoints;
+
+                obj.cupLocation2D_h.XData = cup2dx;
+                obj.cupLocation2D_h.YData = cup2dy;
+
+                % SEND CALCULATED TRAJ
+                % using velocity vector and throw location
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow);
+                % calculate trajectory
+                axes(obj.robotPlot_h);
+                obj.robotLine_h.XData = xMatrix(1,:);
+                obj.robotLine_h.YData = xMatrix(2,:);
+                obj.robotLine_h.ZData = xMatrix(3,:);
+                drawnow();
+
+            % catch broken tf tree
+            catch
+                disp('unable to calculate and plot trajectory');
+            end
+        end
+
+        function onFireButton(obj, app, event)
+            obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
+
+            try
+                sendGoal(obj.actionClient, obj.trajGoal);
+            catch
+                disp('Action sever error');
             end
         end
 
@@ -368,16 +416,19 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3 = UR3m(trotz(pi/2));
 
             % set view properties
+            hold(obj.robotPlot_h, 'on');
             view(obj.robotPlot_h, 30, 20);
             daspect(obj.robotPlot_h,[1 1 1]);
 
+            obj.traj3DLine_h = plot3([0], [0], [0]);
+            obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
+            obj.robotLine_h = plot3([0],[0], [0]);
+
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
-            
-            obj.trajXs = [0];
-            obj.trajYs = [0];
 
-            obj.trajLine_h = plot(obj.trajPlot_h, obj.trajXs, obj.trajYs);
+            obj.traj2DLine_h = plot([0], [0]);
+            hold(obj.trajPlot_h, 'on');
             grid(obj.trajPlot_h, 'on');
             title(obj.trajPlot_h, 'Trajectory 2D x,y');
             xlabel(obj.trajPlot_h, 'X (m)');
@@ -388,6 +439,8 @@ classdef GUI < matlab.apps.AppBase & handle
             ylim(obj.trajPlot_h, [0 1.2])
             pos = get(gca, 'OuterPosition');
             set(gca, 'OuterPosition', pos);
+
+            obj.cupLocation2D_h = plot([0], [0], 'ro');
             
             %CUP LOCATION DATA FIELDS
             obj.cupLocationXLabel = uicontrol('Style', 'text', 'String', 'x-goal', 'position', [20 120 100 15]);
@@ -403,7 +456,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create fire button
             obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.fireButton.Callback = @obj.onFireButton;
 
             %create Open Servo button
             obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
@@ -422,9 +475,9 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.homeButton.Callback = @obj.onHomeButton;
 
             %create get Cup Pose button button
-            obj.getCupPoseButton = uicontrol('String', 'Get Cup Pose', 'position', [400 120 100 30]);
+            obj.calcTrajButton = uicontrol('String', 'Calc Traj', 'position', [400 120 100 30]);
             %attach button callback
-            obj.getCupPoseButton.Callback = @obj.onGetCupPoseButton;
+            obj.calcTrajButton.Callback = @obj.onCalcTrajButton;
 
             %create abort button
             obj.abortButton = uicontrol('String', 'Abort', 'position', [620 80 100 30]);

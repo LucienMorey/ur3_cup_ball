@@ -22,25 +22,23 @@ classdef Projectile < handle
             obj.cor  = cor_;
         end
         
-        function [vi, xi, dx, h, theta] = calcLaunch(obj, s, e, n, v0_)
-            % s -> launch position [x, y, z]
-            % e -> end position [x, y, z]
-            % n -> number of bounces
+
+        % x1 -> x,y,z
+        % x2 -> x,y,z
+        % n  -> num bounce
+        % v0 -> vel magnitude
+        function [v] = calcLaunch(obj, x1, x2, n, v0)
             
-            % First, calculate the throw parameter: dx
-            dx = sqrt( (e(1)-s(1))^2 + (e(2)-s(2))^2 );
+            % Dist in x-y plane (horizontal, flat on table)
+            d = sqrt( (x2(1)-x1(1))^2 + (x2(2)-x1(2))^2 );
                         
             % initial position
             % use x0 = 0, since we are just looking at the throw in-plane,
             % we can take the launch point as directly above the origin
-            xi = [0, s(3)];
-
-            % initial velocity magnitude
-            % max value is 1, this must be know to get the launch angle
-            v0 = v0_;
+            xi = [0, x1(3)];
             
             % height of goal
-            h = e(3);
+            h = x2(3);
 
             % solve for theta
             if n == 0
@@ -53,83 +51,106 @@ classdef Projectile < handle
                 theta = atan( q1 + sqrt(q2 - 1) );
             elseif n == 1
                 
-                % CASE 2: 1 bounce - uses optimisation solver with initial
-                % guess 45 deg
-                theta = solveQuad(xi, v0, dx, h, obj.cor);
+                % CASE 2: 1 bounce - uses optimisation solver with initial guess
+                for i = 0:4
+                    ig = pi/4 + i*pi/18;
+
+                    % calculate throw angle
+                    theta = solveQuad(xi, v0, d, h, obj.cor, ig);
+
+                    % make sure the ball is going down when it passes through goal
+                    tgoal = d / v0*cos(theta);
+                    c2 = sqrt(v0^2*sin(theta)^2 + 2*obj.g*x1(3));
+                    tbounce = (v0*sin(theta) + c2)/obj.g;
+                    vbounce = obj.cor * c2;
+                    tpeak = tbounce + v0*sin(theta) / obj.g;
+
+                    % if going down, then we can stop
+                    if tgoal > tpeak
+                        break;
+                    end
+
+                    % if not, keep incremementing initial guess to get a different solution
+                end
+                
+
+                
             end        
             
             % Convert in-plane velocity/angle to 3D vector
             % given theta, phi - we basically have spherical coordinates so
             % its just stardard spherical->cartesian conversion
-            phi = atan( (e(2)-s(2))/(e(1)-s(2)) );
+            phi = atan((x2(2)-x1(2)) / (x2(1)-x1(2)));
             vx = v0*cos(theta)*cos(phi);
             vy = v0*cos(theta)*sin(phi);
             vz = v0*sin(theta);
             
             % 3D velocity output vec
-            vi = [vx; vy; vz];
+            v = [vx, vy, vz];
         end
         
         % Simulates the projectile for n bounces
         % Returns [x, y, t] vectors
-        function [x, y, t] = simulatep(obj, xi, vi, n)
-            % Initial projectile motion
-            [x, y, vx, vy, t] = obj.runProjectile(xi, vi);
+        function [xMat] = simulateP(obj, x0, v0, n)
 
-            for i = 1:n
-                % Calculate new initial velocity/position after bounce
-                % This is used for the second stage of motion
-                vi = [vx(end), -obj.cor * vy(end)];
-                xi = [x(end), y(end)];
+            if n > 0
+                e  = eye(3);
+                e(3, 3) = -obj.cor;
+            end
 
-                % second bounce
-                [x2, y2, vx2, vy2, t2] = obj.runProjectile(xi, vi);
+            [xMat, vMat, tMat] = deal([]);
 
+            for i = 0:n
+                [x, v, t] = obj.runProjectile(x0, v0);
                 % add movements together
-                x = [x; x2];
-                y = [y; y2];
-                vx = [vx; vx2];
-                vy = [vy; vy2];
-                t2 = t2 + t(end);
-                t = [t; t2];
+                xMat = [xMat; x];
+                vMat = [vMat; v];
+
+                if ~isempty(tMat)
+                    t = t + tMat(end);
+                end
+                t = [tMat; t];
+
+                % Calculate new initial velocity/position after bounce
+                if n > 0
+                    v0 = (e * v(end, :)')';
+                    x0 = x(end, :);
+                end
             end
         end
         
-        % Performs simple projectile motion simulation
-        % this is an internal function, used by simulatep()
-        function [x_, y_, vx_, vy_, t_] = runProjectile(obj, x0, v0)
+        % Performs discrete time simulation of projectile
+        % input collum vectors
+        function [xMat, vMat, tMat] = runProjectile(obj, x0, v0)
             % Time & timestep
             t = 0;
             dt = 0.0005;
 
-            x = x0(1);
-            y = x0(2);
-            vx = v0(1);
-            vy = v0(2);
+            % x, v at current timestep, initially x0, v0
+            x = x0';
+            v = v0';
 
-            x_ = [];
-            y_ = [];
-            t_ = [];
-            vx_ = [];
-            vy_ = [];
+            % initially empty
+            [xMat, vMat, tMat, a] = deal([]);
 
-            while y >= 0
-                x_ = [x_; x];
-                y_ = [y_; y];
-                vx_ = [vx_; vx];
-                vy_ = [vy_; vy];
-                t_ = [t_; t];
+            % constant vec, for constant accerlleration terms
+            c = [0; 0; -obj.g];
 
-                ay = -obj.g - obj.k * vy^2 * sign(vy);
-                ax = -obj.k * vx^2 * sign(vx);
+            % z coord is > 0. Has not hit the ground yet
+            while x(3) >= 0
 
-                vx = vx + ax*dt;
-                vy = vy + ay*dt;
-
-                x = x + vx*dt;
-                y = y + vy*dt;
-
+                % update variables
+                a = -obj.k * eye(3) * sign(v).^2 + c;
+                v = v + dt * a;
+                x = x + dt * v;
                 t = t + dt;
+
+                % add to mat
+                if x(3) >= 0
+                    xMat = [xMat; x'];
+                    vMat = [vMat; v'];
+                    tMat = [tMat; t];
+                end
             end
         end
     end
