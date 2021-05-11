@@ -86,7 +86,7 @@ classdef Projectile < handle
             vz = v0*sin(theta);
             
             % 3D velocity output vec
-            v = [vx; vy; vz];
+            v = [vx, vy, vz];
         end
         
         % Simulates the projectile for n bounces
@@ -113,8 +113,8 @@ classdef Projectile < handle
 
                 % Calculate new initial velocity/position after bounce
                 if n > 0
-                    v0 = e * v(end, :)';
-                    x0 = x(end, :)';
+                    v0 = (e * v(end, :)')';
+                    x0 = x(end, :);
                 end
             end
         end
@@ -127,8 +127,8 @@ classdef Projectile < handle
             dt = 0.0005;
 
             % x, v at current timestep, initially x0, v0
-            x = x0;
-            v = v0;
+            x = x0';
+            v = v0';
 
             % initially empty
             [xMat, vMat, tMat, a] = deal([]);
