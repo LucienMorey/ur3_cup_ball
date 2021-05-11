@@ -20,11 +20,16 @@
     <arg name="robot_ar_robot_qz" default="0.0"/>
     <arg name="robot_ar_robot_qw" default="1.0"/>
 
-    <arg name="cam_id" default="0"/>
+    <arg name="cam_id" default="4"/>
+    <arg name="horizontal_res" default="1920"/>
+    <arg name="vertical_res" default="1080"/>
+    
 
     <!-- start usb cam node -->
     <node pkg="usb_cam" type="usb_cam_node" name="$(arg detection_cam_name)">
         <param name="video_device" value="/dev/video$(arg cam_id)"/>
+        <param name="image_width" value="$(arg horizontal_res)"/>
+        <param name="image_height" value="$(arg vertical_res)"/>      
     </node>
     
     <!-- start cup detect node  -->
