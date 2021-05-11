@@ -41,7 +41,7 @@ classdef TrajectoryGenerator < handle
             obj.reloadLocation = reloadLocation;
         end
         
-        function [qMatrix,vMatrix, tMatrix] = GenerateThrow(obj, velocityVector)
+        function [qMatrix,vMatrix, tMatrix, xMatrix] = GenerateThrow(obj, velocityVector)
             qMatrix = [];
             vMatrix = [];
             tMatrix = [];
@@ -50,7 +50,7 @@ classdef TrajectoryGenerator < handle
             velocityMagnitude = norm(velocityVector);
 
             % get velocity unit vector
-            velocityDirection = velocityVector / velocityMagnitude;
+            velocityDirection = (velocityVector)' / velocityMagnitude;
 
             % get rotation matrix, z-axis in line with velocity vector
             obj.throwPosition(1:3,1:3) = obj.doubleCross(velocityDirection);
@@ -87,6 +87,7 @@ classdef TrajectoryGenerator < handle
 
             % total path
             obj.cartesianTrajectory = [x, theta];
+            xMatrix = x;
             [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(x, theta, trajectoryDeltaT, ones(1,6));
         end
 
