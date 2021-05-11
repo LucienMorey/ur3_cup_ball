@@ -32,6 +32,7 @@ classdef GUI < matlab.apps.AppBase & handle
         traj3DLine_h;
         cupLocation2D_h;
         cupLocation3D_h;
+        robotLine_h
         
         cupLocationXField
         cupLocationYField
@@ -80,6 +81,9 @@ classdef GUI < matlab.apps.AppBase & handle
         ur3;
         trajectoryGenerator;
         projectileGenerator;
+        qMatrix;
+        vMatrix;
+        tMatrix;
     end
     
     methods
@@ -192,7 +196,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 return
             end
 
-            try
+            % try
                 % cup position
                 cup = obj.cupRobotFrame(1:3,4)';
 
@@ -235,8 +239,18 @@ classdef GUI < matlab.apps.AppBase & handle
                 drawnow();
 
             % catch broken tf tree
+            % catch
+            %     disp('unable to calculate and plot trajectory');
+            % end
+        end
+
+        function onFireButton(obj, app, event)
+            obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
+
+            try
+                sendGoal(obj.actionClient, obj.trajGoal);
             catch
-                disp('unable to calculate and plot trajectory');
+                disp('Action sever error');
             end
         end
 
@@ -446,7 +460,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create fire button
             obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.fireButton.Callback = @obj.onFireButton;
 
             %create Open Servo button
             obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
