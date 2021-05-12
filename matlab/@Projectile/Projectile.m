@@ -56,7 +56,11 @@ classdef Projectile < handle
                     ig = pi/4 + i*pi/18;
 
                     % calculate throw angle
-                    theta = solveQuad(xi, v0, d, h, obj.cor, ig);
+                    [theta, exitflag] = solveQuad(xi, v0, d, h, obj.cor, ig);
+
+                    if exitflag < 1
+                        continue;
+                    end
 
                     % make sure the ball is going down when it passes through goal
                     tgoal = d / v0*cos(theta);
@@ -80,7 +84,7 @@ classdef Projectile < handle
             % Convert in-plane velocity/angle to 3D vector
             % given theta, phi - we basically have spherical coordinates so
             % its just stardard spherical->cartesian conversion
-            phi = atan((x2(2)-x1(2)) / (x2(1)-x1(2)));
+            phi = atan((x2(2)-x1(2)) / (x2(1)-x1(1)))
             vx = v0*cos(theta)*cos(phi);
             vy = v0*cos(theta)*sin(phi);
             vz = v0*sin(theta);
