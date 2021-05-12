@@ -7,7 +7,7 @@
 % d  -> horizontal displacement from launch->goal in-plane
 % h  -> height of target (cup)
 % e  -> coefficient of resitution
-function res = solveQuad( x0, v0, d, h, e, ig)
+function [res, exitflag] = solveQuad( x0, v0, d, h, e, ig)
     % const
     g = 9.81;
 
@@ -20,6 +20,6 @@ function res = solveQuad( x0, v0, d, h, e, ig)
     
 
     % solve
-    res = fsolve(fun, ig);
+    [res, fval, exitflag] = fsolve(fun, ig);
 
 end
