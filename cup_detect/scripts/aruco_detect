@@ -11,7 +11,7 @@ from geometry_msgs.msg import Pose, TransformStamped
 from math import pi
 
 class ArucoDetect:
-  def __init__(self, robot_id, cup_id):
+  def __init__(self, robot_id_1, robot_id_2, cup_id_1, cup_id_2):
 
     #create cv bridge instance
     self.cvBridge = CvBridge()
@@ -47,8 +47,28 @@ class ArucoDetect:
     self.dist_1080 = np.array([[  -0.08224,   2.96513,   -0.00730,   -0.00196,  0.00000]])
 
     # init id variables
-    self.cup_id = cup_id
-    self.robot_id = robot_id
+    self.cup_id_1 = cup_id_1
+    self.cup_id_2 = cup_id_2
+    self.robot_id_1 = robot_id_1
+    self.robot_id_2 = robot_id_2
+
+  def checkArucoPresent(self, ids, bounding_boxes):
+    # check if the required AR Tags can be seen once
+    if len(np.where(ids == self.cup_id_1)[0]) == 1 and \
+       len(np.where(ids == self.cup_id_2)[0]) == 1 and \
+       len(np.where(ids == self.robot_id_1)[0]) == 1 and \
+       len(np.where(ids == self.robot_id_2)[0]) == 1:
+
+      # get index value of robot
+      idx_robot_1 = np.where(ids==self.robot_id_1)[0][0]
+      idx_robot_2 = np.where(ids==self.robot_id_2)[0][0]
+      idx_cup_1 = np.where(ids==self.cup_id_1)[0][0]
+      idx_cup_2 = np.where(ids==self.cup_id_2)[0][0]
+
+      important_bounding_boxes = [bounding_boxes[idx_robot_1], bounding_boxes[idx_robot_2], bounding_boxes[idx_cup_1], bounding_boxes[idx_cup_2]]
+    else:
+      important_bounding_boxes = np.empty([])
+    return important_bounding_boxes
 
 
   def image_callback(self, msg):
@@ -68,51 +88,45 @@ class ArucoDetect:
       cv2.aruco.drawDetectedMarkers(cv_image, bounding_boxes)
 
       # check if the required AR Tags can be seen once
-      if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
+      important_bounding_boxes = self.checkArucoPresent(ids, bounding_boxes)
 
-        # get index value of robot
-        index_of_robot = np.where(ids==self.robot_id)[0][0]
-
-        #get index value of cup
-        index_of_cup = np.where(ids==self.cup_id)[0][0]
-
-        # limit to important bounding boxes
-        important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
-        ids = [index_of_cup, index_of_robot]
-
-        # Determine marker poses
+      if np.size(important_bounding_boxes) > 0:
+        # Get da marker posishons
         [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, self.marker_size, self.cam_matrix_1080, self.dist_1080)
 
-        cup_tvec = tvecs[0]
-        cup_rvec = rvecs[0]
-        robot_tvec = tvecs[1]
-        robot_rvec = rvecs[1]
+        # get da posishons
+        robot_tvec_1 = tvecs[0]
+        robot_tvec_2 = tvecs[1]
+        cup_tvec_1   = tvecs[2]
+        cup_tvec_2   = tvecs[3]
 
-        print(cup_rvec)
-
-        self.cup_tvecs_list = np.append(self.cup_tvecs_list, cup_tvec, axis=0)
-        self.cup_rvecs_list = np.append(self.cup_rvecs_list, cup_rvec, axis=0)
-        self.robot_tvecs_list = np.append(self.robot_tvecs_list, robot_tvec, axis=0)
-        self.robot_rvecs_list = np.append(self.robot_rvecs_list, robot_rvec, axis=0)
-        if np.size(self.cup_tvecs_list, axis = 0) > 10:
-          self.cup_tvecs_list = np.delete(self.cup_tvecs_list, (0), axis=0)
-          self.cup_rvecs_list = np.delete(self.cup_rvecs_list, (0), axis=0)
-          self.robot_tvecs_list = np.delete(self.robot_tvecs_list, (0), axis=0)
-          self.robot_rvecs_list = np.delete(self.robot_rvecs_list, (0), axis=0)
-
-          # here there is always 10 elements in the array
-          # average the x
+        # add 2 da lists
+        self.cup_list_1   = np.append(self.cup_list_1, cup_tvec_1, axis=0)
+        self.cup_list_2   = np.append(self.cup_list_2, cup_tvec_2, axis=0)
+        self.robot_list_1 = np.append(self.robot_list_1, robot_tvec_1, axis=0)
+        self.robot_list_2 = np.append(self.robot_list_2, robot_tvec_2, axis=0)
 
 
+        # If there are more than 10 samples
+        if np.size(self.cup_list_1, axis = 0) > 10:
+          # Delete the old element
+          self.cup_list_1 = np.delete(self.cup_list_1, (0), axis=0)
+          self.cup_list_2 = np.delete(self.cup_list_2, (0), axis=0)
+          self.robot_list_1 = np.delete(self.robot_list_1, (0), axis=0)
+          self.robot_list_2 = np.delete(self.robot_list_2, (0), axis=0)
 
-          
-          cup_tvec = np.mean(self.cup_tvecs_list, axis=0)
-          cup_rvec = np.mean(self.cup_rvecs_list, axis=0)
-          robot_tvec = np.mean(self.robot_tvecs_list, axis=0)
-          robot_rvec = np.mean(self.robot_rvecs_list, axis=0)
+          # Do da averaj
+          cup_p1 = np.mean(self.cup_list_1, axis=0)
+          cup_p2 = np.mean(self.cup_list_2, axis=0)
+          robot_p1 = np.mean(self.robot_list_1, axis=0)
+          robot_p2 = np.mean(self.robot_list_2, axis=0)
 
-        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, cup_rvec, cup_tvec, 0.1)  # Draw axis
-        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, robot_rvec, robot_tvec, 0.1)  # Draw axis
+        rvec = np.array([3.141, 0, 0])
+
+        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, cup_p1, rvec, 0.1)  # Draw axis
+        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, cup_p2, rvec, 0.1)  # Draw axis
+        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, robot_p1, rvec, 0.1)  # Draw axis
+        cv2.aruco.drawAxis(cv_image, self.cam_matrix_1080, self.dist_1080, robot_p2, rvec, 0.1)  # Draw axis
 
         try:
           img_msg = self.cvBridge.cv2_to_imgmsg(cv_image, 'bgr8')
@@ -162,7 +176,7 @@ class ArucoDetect:
 
 if __name__ == '__main__':
   rospy.init_node('cup_detector')
-  cupDetector = ArucoDetect(1,0)
+  cupDetector = ArucoDetect(0, 1, 2, 3)
 
   while not rospy.is_shutdown():
     rospy.spin()
