@@ -262,15 +262,15 @@ classdef GUI < matlab.apps.AppBase & handle
                 
                 [max_axis_value,max_axis_value_index] = max(abs(axis_value));
                 switch max_axis_value_index
-                case max_axis_value_index == 1
+                    case 1
                     disp('jog X');
-                    obj.cartesianJog([max_axis_value/100.0,0, 0]);
-                case max_axis_value_index == 2
+                    obj.cartesianJog([axis_value(max_axis_value_index)/100.0,0, 0]);
+                    case 2
                     disp('jog Y');
-                    obj.cartesianJog([0,max_axis_value/100, 0]);
-                case max_axis_value_index == 3
+                    obj.cartesianJog([0,axis_value(max_axis_value_index)/100, 0]);
+                    case 4
                     disp('jog Z');
-                    obj.cartesianJog([0,0, max_axis_value/100]);
+                    obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
                 otherwise
                     disp('penis')
                 end
@@ -398,13 +398,13 @@ classdef GUI < matlab.apps.AppBase & handle
             q = obj.getJointState();
             if ~isempty(q)
                 [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
-                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+%                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
                 
                 % make the traj message
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
 
                 try
-                    sendGoal(obj.actionClient, obj.trajGoal);
+                    sendGoalAndWait(obj.actionClient, obj.trajGoal);
                 catch
                     disp('Action sever error');
                 end
@@ -514,7 +514,6 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
             %attach button callback
             obj.openButton.Callback = @obj.onOpenServoButton;
-
 
             %create Close servo button
             obj.closeButton = uicontrol('String', 'Close Servo', 'position', [510 80 100 30]);
