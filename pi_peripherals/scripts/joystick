@@ -29,7 +29,7 @@ rospy.init_node('Joystick')
 rate = rospy.Rate(20.0) #sets ROS refresh rate to 20Hz
 
 
-joy_pub = rospy.Publisher('Joystick', Joy, queue_size=1)
+joy_pub = rospy.Publisher('joystick', Joy, queue_size=1)
 
 if __name__ == "__main__":
     #while True: #for debugging purposes
