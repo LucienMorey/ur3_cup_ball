@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import rospy
+from std_msgs.msg import Bool
+import RPi.GPIO as GPIO
+
+
+if __name__ == "__main__":
+    button_pin = 5
+
+    # start gpio
+    GPIO.setmode(GPIO.BOARD)
+
+    # pull down button
+    GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    # start ros node
+    rospy.init_node('estop_node')
+
+    # create estop publisher
+    estop_pub = rospy.Publisher('/estop', Bool, queue_size=1)
+    
+    #main loop
+    button_previous = GPIO.input(button_pin)
+    button_current = button_previous
+    while not rospy.is_shutdown():
+        #look for change in button state
+        button_current = GPIO.input(button_pin)
+        if button_current != button_previous:
+                msg = Bool()
+                msg.data = button_current
+                estop_pub.publish(msg)
+        button_previous = GPIO.input(button_pin)
+
