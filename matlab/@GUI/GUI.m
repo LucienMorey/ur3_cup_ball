@@ -74,6 +74,7 @@ classdef GUI < matlab.apps.AppBase & handle
         servoPublisher;
         estopSubscriber;
         jointStateSubscriber;
+        gamePadSubscriber
         tree;
         cupRobotFrame;
         actionClient;
@@ -103,6 +104,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
             [obj.actionClient, obj.trajGoal] = rosactionclient('/scaled_pos_joint_traj_controller/follow_joint_trajectory');
+            obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
             obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
             obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
             obj.tree = rostf;
@@ -238,6 +240,56 @@ classdef GUI < matlab.apps.AppBase & handle
             catch
                 disp('unable to calculate and plot trajectory');
             end
+        end
+
+        function onGamePad(obj, app, event)
+            cls = 0;
+            % try
+                while cls == 0 %make this close on the clear button
+                %    vz = joy.axis[1];
+                %    vx = joy.axis[2];
+                %    vy = joy.axis[3];
+                %    r  = joy.axis[1];
+                %    p = joy.axis[2];
+                %    y = joy.axis[3];
+                msg = receive(obj.gamePadSubscriber ,obj.SUBSCIRIBER_TIMEOUT);
+                axis_value = (msg.Axes);
+                button_value = (msg.Buttons);
+
+                xyz2rpy = button_value(2); %Left trigger
+                % TODO implement jogging in rpy
+                cls = button_value(9); %Back button will close out of joystick mode
+                
+                [max_axis_value,max_axis_value_index] = max(abs(axis_value));
+                switch max_axis_value_index
+                case max_axis_value_index == 1
+                    disp('jog X');
+                    obj.cartesianJog([max_axis_value/100.0,0, 0]);
+                case max_axis_value_index == 2
+                    disp('jog Y');
+                    obj.cartesianJog([0,max_axis_value/100, 0]);
+                case max_axis_value_index == 3
+                    disp('jog Z');
+                    obj.cartesianJog([0,0, max_axis_value/100]);
+                otherwise
+                    disp('penis')
+                end
+
+%                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                    %convert to ros traj msg
+%                 obj.makeTrajMsg(q,v,t);
+
+                end
+                % send msg
+%                 try
+%                     sendGoal(obj.actionClient, obj.trajGoal);
+%                 catch
+%                     disp('Action sever error');
+%                 end
+            % catch
+            %     disp('fail')
+            % end
+
         end
 
         function onFireButton(obj, app, event)
@@ -521,7 +573,7 @@ classdef GUI < matlab.apps.AppBase & handle
             
             %create gamepad control jog
             obj.gamePadJog = uicontrol('String', 'GamePadEnable', 'position', [1000 90 100 30]);
-            %Callback
+            obj.gamePadJog.Callback = @obj.onGamePad
 
             %create joint jog buttons
             obj.q1PlusButton = uicontrol('String', 'q1+', 'position', [1300 120 100 30]);

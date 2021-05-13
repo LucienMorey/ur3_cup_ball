@@ -142,11 +142,11 @@ classdef TrajectoryGenerator < handle
                 if m < obj.EPSILON
                     % least squares
                     lambda = (1 - (m/obj.EPSILON)^2)*0.02;
-                    disp('dls');
+%                     disp('dls');
                 else
                     % not required
                     lambda = 0;
-                    disp('nodls');
+%                     disp('nodls');
                 end
                 
                 % apply least squares if required and invert jacobian
