@@ -84,7 +84,7 @@ classdef Projectile < handle
             % Convert in-plane velocity/angle to 3D vector
             % given theta, phi - we basically have spherical coordinates so
             % its just stardard spherical->cartesian conversion
-            phi = atan((x2(2)-x1(2)) / (x2(1)-x1(1)))
+            phi = atan((x2(2)-x1(2)) / (x2(1)-x1(1)));
             vx = v0*cos(theta)*cos(phi);
             vy = v0*cos(theta)*sin(phi);
             vz = v0*sin(theta);
