@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from numpy.lib.function_base import average
 import cv2
 import numpy as np
 import rospy
@@ -7,9 +8,13 @@ from tf2_ros import TransformBroadcaster
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose, TransformStamped
+from math import pi
+from math import sqrt
+from math import sin
+from math import cos
 
 class ArucoDetect:
-  def __init__(self, robot_id, cup_id):
+  def __init__(self, robot_id_1, robot_id_2, cup_id_1, cup_id_2):
 
     #create cv bridge instance
     self.cvBridge = CvBridge()
@@ -22,103 +27,208 @@ class ArucoDetect:
     
     #create bounding box image pub
     self.bounding_image_pub = rospy.Publisher('/bounding_image', Image, queue_size=1)
+    self.cup_list_1 = np.empty([1,3])
+    self.cup_list_2 = np.empty([1,3])
+    self.robot_list_1 = np.empty([1,3])
+    self.robot_list_2 = np.empty([1,3])
 
     #load aruco marker dictionary
     self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_100)
     # this value should match the last value in the dictionary if predefined.
     # otherwise if a custom size is used generate a new dictionary
     #this unit is in metres
-    self.marker_size = 0.03
+    self.marker_size = 0.05
 
     #create aruco params
     self.aruco_param = cv2.aruco.DetectorParameters_create()
 
     # TODO offload paramaters to be obtained on ros network
-    self.cam_matrix_480 = np.array([[  1997.44065,    0.,          938.99262],[   0.,          1996.92577,  572.39607],[   0.,            0.,            1.,        ]])
+    self.cam_matrix_1080 = np.array([[  1997.44065,    0.,          938.99262],[   0.,          1996.92577,  572.39607],[   0.,            0.,            1.,        ]])
     self.dist_480 = np.array([[  0.09345,   -0.09263,   -0.00033,   0.00435,  0.00000]])
 
-    self.cam_matrix_1080 = np.array([[  658.02788,    0.,          328.23101],[   0.,          657.60186,  256.33508],[   0.,            0.,            1.,        ]])
+    self.cam_matrix_480 = np.array([[  658.02788,    0.,          328.23101],[   0.,          657.60186,  256.33508],[   0.,            0.,            1.,        ]])
     self.dist_1080 = np.array([[  -0.08224,   2.96513,   -0.00730,   -0.00196,  0.00000]])
 
     # init id variables
-    self.cup_id = cup_id
-    self.robot_id = robot_id
+    self.cup_id_1 = cup_id_1
+    self.cup_id_2 = cup_id_2
+    self.robot_id_1 = robot_id_1
+    self.robot_id_2 = robot_id_2
 
+  def checkArucoPresent(self, ids, bounding_boxes):
+    # check if the required AR Tags can be seen once
+    if len(np.where(ids == self.cup_id_1)[0]) == 1 and \
+       len(np.where(ids == self.cup_id_2)[0]) == 1 and \
+       len(np.where(ids == self.robot_id_1)[0]) == 1 and \
+       len(np.where(ids == self.robot_id_2)[0]) == 1:
+
+      # get index value of robot
+      idx_robot_1 = np.where(ids==self.robot_id_1)[0][0]
+      idx_robot_2 = np.where(ids==self.robot_id_2)[0][0]
+      idx_cup_1 = np.where(ids==self.cup_id_1)[0][0]
+      idx_cup_2 = np.where(ids==self.cup_id_2)[0][0]
+
+      important_bounding_boxes = [bounding_boxes[idx_robot_1], bounding_boxes[idx_robot_2], bounding_boxes[idx_cup_1], bounding_boxes[idx_cup_2]]
+    else:
+      important_bounding_boxes = np.empty([])
+    return important_bounding_boxes
+
+  def cameraToPixel(self, p):
+    u = int(self.cam_matrix_1080[0][0] * p[0]/p[2] + self.cam_matrix_1080[0][2])
+    v = int(self.cam_matrix_1080[1][1] * p[1]/p[2] + self.cam_matrix_1080[1][2])
+    return np.array([u, v])
+
+  def sendTransform(self, parent_id, child_id, t, r):
+    tf = TransformStamped()
+    tf.header.stamp = rospy.Time.now()
+    tf.header.frame_id = parent_id
+    tf.child_frame_id = child_id
+    tf.transform.translation.x = t[1]
+    tf.transform.translation.y = t[0]
+    tf.transform.translation.z = t[2]
+    q = transformations.quaternion_from_euler(r[0], r[1], r[2])
+    tf.transform.rotation.x = q[0]
+    tf.transform.rotation.y = q[1]
+    tf.transform.rotation.z = q[2]
+    tf.transform.rotation.w = q[3]
+    self.tfBroadcaster.sendTransform(tf)
+    return
 
   def image_callback(self, msg):
     # try to convert image to cv
     try:
-      cv_image = self.cvBridge.imgmsg_to_cv2(msg)
+      cv_image = cv2.flip(cv2.flip(self.cvBridge.imgmsg_to_cv2(msg),1),0)
 
       # convert image to graysecale
-      gs_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2GRAY)
+      # gs_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+      # cv2.imshow('cunt', gs_image)
+      # cv2.waitKey(1)
       
       # detect markers in vision
-      bounding_boxes, ids, _ = cv2.aruco.detectMarkers(gs_image, self.aruco_dict, parameters=self.aruco_param)
+      bounding_boxes, ids, _ = cv2.aruco.detectMarkers(cv_image, self.aruco_dict, parameters=self.aruco_param)
       
       # publish image with detected markers for debugging
-      cv2.aruco.drawDetectedMarkers(gs_image, bounding_boxes)
-      try:
-        img_msg = self.cvBridge.cv2_to_imgmsg(gs_image)
-        self.bounding_image_pub.publish(img_msg)
-      except CvBridgeError:
-        print('failed to convert cv2 image to ros message')
+      cv2.aruco.drawDetectedMarkers(cv_image, bounding_boxes)
 
       # check if the required AR Tags can be seen once
-      if (len(np.where(ids == self.cup_id)[0]) == 1) and (len(np.where(ids == self.robot_id)[0]) == 1):
+      important_bounding_boxes = self.checkArucoPresent(ids, bounding_boxes)
 
-        # get index value of robot
-        index_of_robot = np.where(ids==self.robot_id)[0][0]
-
-        #get index value of cup
-        index_of_cup = np.where(ids==self.cup_id)[0][0]
-
-        # limit to important bounding boxes
-        important_bounding_boxes = [bounding_boxes[index_of_cup], bounding_boxes[index_of_robot]]
-
-        # Determine marker poses
+      if np.size(important_bounding_boxes) > 0:
+        # Get da marker posishons
         [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, self.marker_size, self.cam_matrix_1080, self.dist_1080)
+
+        # get da posishons
+        robot_tvec_1 = tvecs[0]
+        robot_tvec_2 = tvecs[1]
+        cup_tvec_1   = tvecs[2]
+        cup_tvec_2   = tvecs[3]
+
+        # add 2 da lists
+        self.cup_list_1   = np.append(self.cup_list_1, cup_tvec_1, axis=0)
+        self.cup_list_2   = np.append(self.cup_list_2, cup_tvec_2, axis=0)
+        self.robot_list_1 = np.append(self.robot_list_1, robot_tvec_1, axis=0)
+        self.robot_list_2 = np.append(self.robot_list_2, robot_tvec_2, axis=0)
+
+        # If there are more than 10 samples
+        if np.size(self.cup_list_1, axis = 0) > 10:
+          # Delete the old element
+          self.cup_list_1 = np.delete(self.cup_list_1, (0), axis=0)
+          self.cup_list_2 = np.delete(self.cup_list_2, (0), axis=0)
+          self.robot_list_1 = np.delete(self.robot_list_1, (0), axis=0)
+          self.robot_list_2 = np.delete(self.robot_list_2, (0), axis=0)
+
+          # Do da averaj
+          cup_p1 = np.mean(self.cup_list_1, axis=0)
+          cup_p2 = np.mean(self.cup_list_2, axis=0)
+          robot_p1 = np.mean(self.robot_list_1, axis=0)
+          robot_p2 = np.mean(self.robot_list_2, axis=0)
+          
+          # convert to pixel coordinates and plot circles for test
+          cup_1_image = self.cameraToPixel(cup_p1)
+          cup_2_image = self.cameraToPixel(cup_p2)
+          robot_1_image = self.cameraToPixel(robot_p1)
+          robot_2_image = self.cameraToPixel(robot_p2)
+          cv2.circle(cv_image, (cup_1_image[0], cup_1_image[1]), 15, (255, 0, 0), 4)
+          cv2.circle(cv_image, (cup_2_image[0], cup_2_image[1]), 15, (0, 255, 0), 4)
+          cv2.circle(cv_image, (robot_1_image[0], robot_1_image[1]), 15, (255, 255, 0), 4)
+          cv2.circle(cv_image, (robot_2_image[0], robot_2_image[1]), 15, (0, 0, 255), 4)
+        
+          # Vector from tag2->tag1
+          v = cup_p1 - cup_p2
+
+          # empty vec
+          vc = np.empty(3)
+
+          # rotate v by 45 degrees
+          vc[0] = v[0]*cos(pi/4) - v[1]*sin(pi/4)
+          vc[1] = v[0]*sin(pi/4) + v[1]*cos(pi/4)
+          vc[2] = 0
+
+          # scale vector (its a isosceles triangle so pythag gives 1/sqrt(2))
+          vc = vc / sqrt(2)
+
+          # shift it back from origin to where it should be
+          vc = vc + cup_p2
+
+          # convert to pixel coords for drawing circle
+          vc_image = self.cameraToPixel(vc)
+
+          # draw circle
+          cv2.circle(cv_image, (vc_image[0], vc_image[1]), 10, (50, 50, 255), 4)
+
+        try:
+          img_msg = self.cvBridge.cv2_to_imgmsg(cv_image, 'bgr8')
+          self.bounding_image_pub.publish(img_msg)
+        except CvBridgeError:
+          print('failed to convert cv2 image to ros message')
+
+          robot_tvec_1[0][1] = robot_tvec_1[0][1] - 0.315
+
+        self.sendTransform(msg.header.frame_id, 'base_link', robot_tvec_1[0], rvecs[0][0])
+        self.sendTransform(msg.header.frame_id, 'cup', vc, rvecs[2][0])
+
+          # print('tvec ', robot_tvec, 'rvec', robot_rvec)
 
         # broadcast tf from camera frame to cup_ar_tag
         #TODO check that rotation and translation values are being set to correct axis
-        cup_ar_transform = TransformStamped()
-        cup_ar_transform.header.stamp = rospy.Time.now()
-        cup_ar_transform.header.frame_id = msg.header.frame_id
-        cup_ar_transform.child_frame_id = "cup_ar_marker"
-        cup_ar_transform.transform.translation.x = tvecs[0][0][0]
-        cup_ar_transform.transform.translation.y = tvecs[0][0][1]
-        cup_ar_transform.transform.translation.z = tvecs[0][0][2]
-        q = transformations.quaternion_from_euler(rvecs[0][0][0], rvecs[0][0][1], rvecs[0][0][2])
-        cup_ar_transform.transform.rotation.x = q[0]
-        cup_ar_transform.transform.rotation.y = q[1]
-        cup_ar_transform.transform.rotation.z = q[2]
-        cup_ar_transform.transform.rotation.w = q[3]
-        self.tfBroadcaster.sendTransform(cup_ar_transform)
+        # cup_ar_transform = TransformStamped()
+        # cup_ar_transform.header.stamp = rospy.Time.now()
+        # cup_ar_transform.header.frame_id = msg.header.frame_id
+        # cup_ar_transform.child_frame_id = "cup_ar_marker"
+        # cup_ar_transform.transform.translation.x = cup_tvec[1]
+        # cup_ar_transform.transform.translation.y = cup_tvec[0]
+        # cup_ar_transform.transform.translation.z = cup_tvec[2]
+        # q = transformations.quaternion_from_euler(cup_rvec[0], cup_rvec[1], cup_rvec[2])
+        # cup_ar_transform.transform.rotation.x = q[0]
+        # cup_ar_transform.transform.rotation.y = q[1]
+        # cup_ar_transform.transform.rotation.z = q[2]
+        # cup_ar_transform.transform.rotation.w = q[3]
+        # self.tfBroadcaster.sendTransform(cup_ar_transform)
 
-        # broadcast tf from camera frame to robot_ar_tag
-        #TODO check that rotation and translation values are being set to correct axis
-        robot_ar_transform = TransformStamped()
-        robot_ar_transform.header.stamp = rospy.Time.now()
-        robot_ar_transform.header.frame_id = msg.header.frame_id
-        robot_ar_transform.child_frame_id = "robot_ar_marker"
-        robot_ar_transform.transform.translation.x = tvecs[1][0][0]
-        robot_ar_transform.transform.translation.y = tvecs[1][0][1]
-        robot_ar_transform.transform.translation.z = tvecs[1][0][2]
-        print(tvecs[1][0])
-        q = transformations.quaternion_from_euler(rvecs[1][0][0], rvecs[1][0][1], rvecs[1][0][2])
-        robot_ar_transform.transform.rotation.x = q[0]
-        robot_ar_transform.transform.rotation.y = q[1]
-        robot_ar_transform.transform.rotation.z = q[2]
-        robot_ar_transform.transform.rotation.w = q[3]
-        self.tfBroadcaster.sendTransform(robot_ar_transform)
-    except CvBridgeError:
-      print('fail to convert to ros message to cv2 image')
-
+          # # broadcast tf from camera frame to robot_ar_tag
+          # #TODO check that rotation and translation values are being set to correct axis
+          # robot_ar_transform = TransformStamped()
+          # robot_ar_transform.header.stamp = rospy.Time.now()
+          # robot_ar_transform.header.frame_id = msg.header.frame_id
+          # robot_ar_transform.child_frame_id = "robot_ar_marker"
+          # robot_ar_transform.transform.translation.x = robot_tvec[1]
+          # robot_ar_transform.transform.translation.y = robot_tvec[0]
+          # robot_ar_transform.transform.translation.z = robot_tvec[2]
+          
+          # q = transformations.quaternion_from_euler(robot_rvec[0], robot_rvec[2], robot_rvec[1])
+          # robot_ar_transform.transform.rotation.x = q[0]
+          # robot_ar_transform.transform.rotation.y = q[1]
+          # robot_ar_transform.transform.rotation.z = q[2]
+          # robot_ar_transform.transform.rotation.w = q[3]
+          # self.tfBroadcaster.sendTransform(robot_ar_transform)
+    except Exception as e:
+      # print('fail to convert to ros message to cv2 image')
+      print('Exception: ', e)
 
 
 if __name__ == '__main__':
   rospy.init_node('cup_detector')
-  cupDetector = ArucoDetect(1,0)
+  cupDetector = ArucoDetect(2, 3, 0, 1)
 
   while not rospy.is_shutdown():
     rospy.spin()
