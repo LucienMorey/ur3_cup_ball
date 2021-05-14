@@ -86,7 +86,7 @@ class ArucoDetect:
     tf.transform.translation.x = t[1]
     tf.transform.translation.y = t[0]
     tf.transform.translation.z = t[2]
-    q = transformations.quaternion_from_euler(cup_rvec[0], cup_rvec[1], cup_rvec[2])
+    q = transformations.quaternion_from_euler(r[0], r[1], r[2])
     tf.transform.rotation.x = q[0]
     tf.transform.rotation.y = q[1]
     tf.transform.rotation.z = q[2]
