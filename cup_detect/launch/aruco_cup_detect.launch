@@ -38,10 +38,10 @@
     </node>
 
     <!-- broadcast transform from cup_ar to cup -->
-    <node pkg="tf" type="static_transform_publisher" name="cup_broadcaster" args="$(arg cup_ar_cup_x) $(arg cup_ar_cup_y) $(arg cup_ar_cup_z) $(arg cup_ar_cup_qx) $(arg cup_ar_cup_qy) $(arg cup_ar_cup_qz) $(arg cup_ar_cup_qw) cup_ar_marker cup 33" />
+    <!-- <node pkg="tf" type="static_transform_publisher" name="cup_broadcaster" args="$(arg cup_ar_cup_x) $(arg cup_ar_cup_y) $(arg cup_ar_cup_z) $(arg cup_ar_cup_qx) $(arg cup_ar_cup_qy) $(arg cup_ar_cup_qz) $(arg cup_ar_cup_qw) cup_ar_marker cup 33" /> -->
 
 
     <!-- broadcast transform from robot_ar to robot -->
-    <node pkg="tf" type="static_transform_publisher" name="robot_broadcaster" args="$(arg robot_ar_robot_x) $(arg robot_ar_robot_y) $(arg robot_ar_robot_z) $(arg robot_ar_robot_qx) $(arg robot_ar_robot_qy) $(arg robot_ar_robot_qz) $(arg robot_ar_robot_qw) robot_ar_marker robot 33"/>
+    <!-- <node pkg="tf" type="static_transform_publisher" name="robot_broadcaster" args="$(arg robot_ar_robot_x) $(arg robot_ar_robot_y) $(arg robot_ar_robot_z) $(arg robot_ar_robot_qx) $(arg robot_ar_robot_qy) $(arg robot_ar_robot_qz) $(arg robot_ar_robot_qw) robot_ar_marker robot 33"/> -->
 
 </launch>

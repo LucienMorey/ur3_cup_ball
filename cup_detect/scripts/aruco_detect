@@ -182,7 +182,12 @@ class ArucoDetect:
         except CvBridgeError:
           print('failed to convert cv2 image to ros message')
 
-        # print('tvec ', robot_tvec, 'rvec', robot_rvec)
+          robot_tvec_1[0][1] = robot_tvec_1[0][1] - 0.315
+
+        self.sendTransform(msg.header.frame_id, 'base_link', robot_tvec_1[0], rvecs[0][0])
+        self.sendTransform(msg.header.frame_id, 'cup', vc, rvecs[2][0])
+
+          # print('tvec ', robot_tvec, 'rvec', robot_rvec)
 
         # broadcast tf from camera frame to cup_ar_tag
         #TODO check that rotation and translation values are being set to correct axis
@@ -200,22 +205,22 @@ class ArucoDetect:
         # cup_ar_transform.transform.rotation.w = q[3]
         # self.tfBroadcaster.sendTransform(cup_ar_transform)
 
-        # # broadcast tf from camera frame to robot_ar_tag
-        # #TODO check that rotation and translation values are being set to correct axis
-        # robot_ar_transform = TransformStamped()
-        # robot_ar_transform.header.stamp = rospy.Time.now()
-        # robot_ar_transform.header.frame_id = msg.header.frame_id
-        # robot_ar_transform.child_frame_id = "robot_ar_marker"
-        # robot_ar_transform.transform.translation.x = robot_tvec[1]
-        # robot_ar_transform.transform.translation.y = robot_tvec[0]
-        # robot_ar_transform.transform.translation.z = robot_tvec[2]
-        
-        # q = transformations.quaternion_from_euler(robot_rvec[0], robot_rvec[2], robot_rvec[1])
-        # robot_ar_transform.transform.rotation.x = q[0]
-        # robot_ar_transform.transform.rotation.y = q[1]
-        # robot_ar_transform.transform.rotation.z = q[2]
-        # robot_ar_transform.transform.rotation.w = q[3]
-        # self.tfBroadcaster.sendTransform(robot_ar_transform)
+          # # broadcast tf from camera frame to robot_ar_tag
+          # #TODO check that rotation and translation values are being set to correct axis
+          # robot_ar_transform = TransformStamped()
+          # robot_ar_transform.header.stamp = rospy.Time.now()
+          # robot_ar_transform.header.frame_id = msg.header.frame_id
+          # robot_ar_transform.child_frame_id = "robot_ar_marker"
+          # robot_ar_transform.transform.translation.x = robot_tvec[1]
+          # robot_ar_transform.transform.translation.y = robot_tvec[0]
+          # robot_ar_transform.transform.translation.z = robot_tvec[2]
+          
+          # q = transformations.quaternion_from_euler(robot_rvec[0], robot_rvec[2], robot_rvec[1])
+          # robot_ar_transform.transform.rotation.x = q[0]
+          # robot_ar_transform.transform.rotation.y = q[1]
+          # robot_ar_transform.transform.rotation.z = q[2]
+          # robot_ar_transform.transform.rotation.w = q[3]
+          # self.tfBroadcaster.sendTransform(robot_ar_transform)
     except Exception as e:
       # print('fail to convert to ros message to cv2 image')
       print('Exception: ', e)
