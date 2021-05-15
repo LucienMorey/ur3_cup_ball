@@ -18,10 +18,10 @@ classdef GUI < matlab.apps.AppBase & handle
         COEFFICIENT_OF_RESTITUTION = 0.86;
         LAUNCH_POSITION = transl([-0.25, -0.25, 0.45]); % These positions are relative to the robot
         RELOAD_POSITION = transl([-0.0,-0.3,0.33]);
-        LAUNCH_VELOCITY_MAGNITUDE = 1.0;
+        LAUNCH_VELOCITY_MAGNITUDE = 0.1;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
-        NETWORK_BUFFER_TIME = 1.0;
+        NETWORK_BUFFER_TIME = 0.5;
     end
     
     properties(Access = private)
