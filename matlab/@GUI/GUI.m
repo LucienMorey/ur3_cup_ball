@@ -459,8 +459,35 @@ classdef GUI < matlab.apps.AppBase & handle
             % UR3 subplot
             obj.robotPlot_h = subplot(1, 2, 1);
 
+            success = false;
+            while success == false
+                try
+                    pose = rosmessage('geometry_msgs/PoseStamped');
+                    pose.Header.FrameId = 'base_link';
+                    pose.Pose.Position.X = 0.0;
+                    pose.Pose.Position.Y = 0.0;
+                    pose.Pose.Position.Z = 0.0;
+                    pose.Pose.Orientation.X = 0.0;
+                    pose.Pose.Orientation.Y = 0.0;
+                    pose.Pose.Orientation.Z = 0.0;
+                    pose.Pose.Orientation.W = 1.0;
+
+                    transformedPose = transform(obj.tree, 'world', pose);
+                    %create rotation matrix from tranformed quaternion
+                    rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
+                    %compound rotation matrix and translation into homogenous transform
+                    obj.robotWorldFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                    if obj.robotWorldFrame(1:3,4) ~= [0; 0; 0]
+                        success = true;
+                    end
+                catch
+                    disp('error getting robot transform. will keep retrying')
+                end
+            end
+                
             % create ur3
-            obj.ur3 = UR3m(trotz(pi/2));
+            obj.ur3 = UR3m(obj.robotWorldFrame);
+
 
             % set view properties
             hold(obj.robotPlot_h, 'on');
