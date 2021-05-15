@@ -133,7 +133,7 @@ classdef TrajectoryGenerator < handle
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
-                marray = [marray; m];
+%                 marray = [marray; m];
                 %m = 0;
 
                 % check if a damped least squares solution is required

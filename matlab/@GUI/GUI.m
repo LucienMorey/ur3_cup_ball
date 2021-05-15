@@ -236,7 +236,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location
-                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow);
+                q = obj.getJointState();
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow, q);
 
                 % calculate trajectory
                 axes(obj.robotPlot_h);
