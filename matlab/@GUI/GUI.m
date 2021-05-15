@@ -502,6 +502,8 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.traj3DLine_h = plot3([0], [0], [0]);
             obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
+            xlim(obj.robotPlot_h, [0, 2]);
+            ylim(obj.robotPlot_h, [-1.2, 0])
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
