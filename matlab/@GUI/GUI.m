@@ -85,6 +85,9 @@ classdef GUI < matlab.apps.AppBase & handle
         trajGoal;
         
         ur3;
+        table;
+        table_mount;
+        cup;
         trajectoryGenerator;
         projectileGenerator;
         qMatrix;
@@ -502,7 +505,11 @@ classdef GUI < matlab.apps.AppBase & handle
                 
             % create ur3
             obj.ur3 = UR3m(obj.robotWorldFrame);
-
+            
+            %create environment
+            obj.table = Environment((transl(0,0,0)*rpy2tr(0,0,0, 'deg)),'table top.PLY');
+            obj.table_mount = Environment(transl(0,0,0)*rpy2tr(0,0,0),'metal table thing.PLY');
+            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0),'cup.PLY');
 
             % set view properties
             hold(obj.robotPlot_h, 'on');
@@ -515,7 +522,8 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.reloadLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
             xlim(obj.robotPlot_h, [0, 2]);
-            ylim(obj.robotPlot_h, [-1.2, 0])
+            ylim(obj.robotPlot_h, [-1.2, 0]);
+            zlim(obj.robotPlot_h, [-.5, 1]);
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
