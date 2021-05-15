@@ -16,8 +16,8 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.86;
-        LAUNCH_POSITION = transl(0,0.3,0.3);
-        RELOAD_POSITION = transl(-0.1,0,0.55);
+        LAUNCH_POSITION = transl([0.25, 0.25, 0.4]);
+        RELOAD_POSITION = transl([0.22,0.18,0.33]);
         LAUNCH_VELOCITY_MAGNITUDE = 1.0;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.1;
@@ -112,7 +112,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.LAUNCH_POSITION, 0.1,0.45, obj.RELOAD_POSITION);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.LAUNCH_POSITION, 0.25,0.1, obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -173,7 +173,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 pose.Pose.Orientation.Z = 0.0;
                 pose.Pose.Orientation.W = 1.0;
 
-                transformedPose = transform(obj.tree, 'robot', pose);
+                transformedPose = transform(obj.tree, 'base_link', pose);
                 %create rotation matrix from tranformed quaternion
                 rotm = quat2rotm([transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W]);
                 %compound rotation matrix and translation into homogenous transform
@@ -204,13 +204,9 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % 3d plot
                 axes(obj.robotPlot_h)
-                obj.traj3DLine_h.XData = xyz(:, 1);
-                obj.traj3DLine_h.YData = xyz(:, 2);
-                obj.traj3DLine_h.ZData = xyz(:, 3);
-
-                obj.cupLocation3D_h.XData = cup(1);
-                obj.cupLocation3D_h.YData = cup(2);
-                obj.cupLocation3D_h.ZData = cup(3);
+                [obj.traj3DLine_h.XData, obj.traj3DLine_h.YData, obj.traj3DLine_h.ZData] = deal(xyz(:, 1), xyz(:, 2), xyz(:, 3));
+                
+                [obj.cupLocation3D_h.XData, obj.cupLocation3D_h.YData, obj.cupLocation3D_h.ZData] = deal(cup(1),cup(2),cup(3));
 
                 % calculate 2d points from 3d ones
                 xPoints = sqrt(xyz(:, 1).^2 + xyz(:, 2).^2);
@@ -220,21 +216,19 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % 2D plot
                 axes(obj.trajPlot_h);
-                obj.traj2DLine_h.XData = xPoints;
-                obj.traj2DLine_h.YData = yPoints;
+                [obj.traj2DLine_h.XData, obj.traj2DLine_h.YData] = deal(xPoints, yPoints);
 
-                obj.cupLocation2D_h.XData = cup2dx;
-                obj.cupLocation2D_h.YData = cup2dy;
+                [obj.cupLocation2D_h.XData, obj.cupLocation2D_h.YData] = deal(xPoints, yPoints);
 
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location
                 [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow);
                 % calculate trajectory
                 axes(obj.robotPlot_h);
-                obj.robotLine_h.XData = xMatrix(1,:);
-                obj.robotLine_h.YData = xMatrix(2,:);
-                obj.robotLine_h.ZData = xMatrix(3,:);
+
+                [obj.robotLine_h.XData, obj.robotLine_h.YData, obj.robotLine_h.ZData] = deal(xMatrix(:,1),xMatrix(:,2), xMatrix(:,3));
                 drawnow();
+                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 50);
 
             % catch broken tf tree
             catch

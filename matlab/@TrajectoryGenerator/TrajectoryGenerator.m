@@ -13,7 +13,7 @@ classdef TrajectoryGenerator < handle
     end
 
     properties(Constant)
-        EPSILON = 0.006; % tune this if not moving well
+        EPSILON = 0.05; % tune this if not moving well
         VELOCITY_WEIGHTING = diag([1,1,1,1,1,0.1]);
         STEPS = 75;     % more steps make the movement better
         LINEAR_CART_VEL = 0.1;
@@ -106,6 +106,7 @@ classdef TrajectoryGenerator < handle
             % get transform of first point
             %use rpy2tr
             T =  transl(xyz(1,:)) * rpy2tr(rpy(1, :));
+            marray = [];
 
             % initial joint state
             qMatrix(1,:) = obj.robot.ikcon(T, initialguess);
@@ -136,17 +137,16 @@ classdef TrajectoryGenerator < handle
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
+                marray = [marray; m];
                 %m = 0;
 
                 % check if a damped least squares solution is required
                 if m < obj.EPSILON
                     % least squares
-                    lambda = (1 - (m/obj.EPSILON)^2)*0.02;
-%                     disp('dls');
+                    lambda = (1 - (m/obj.EPSILON)^2)*0.005;
                 else
                     % not required
                     lambda = 0;
-%                     disp('nodls');
                 end
                 
                 % apply least squares if required and invert jacobian
@@ -158,10 +158,10 @@ classdef TrajectoryGenerator < handle
                 % check if expected to exceed joint limits
                 for j = 1:obj.robot.n % Loop through joints 1 to 6
                     if qMatrix(i,j) + dt(i)*vMatrix(i,j) < obj.robot.qlim(j,1) % If next joint angle is lower than joint limit...
-                        vMatrix(i, j) = ( obj.robot.qlim(j,1) - qMatrix(i,j) )/ dt(1);
+                        vMatrix(i, j) = 0;
                         %vMatrix(i,j) = 0;  % Stop the motor
                     elseif qMatrix(i,j) + dt(i)*vMatrix(i,j) > obj.robot.qlim(j,2) % If next joint angle is greater than joint limit ...
-                        vMatrix(i, j) = ( obj.robot.qlim(j,2) - qMatrix(i,j) )/ dt(1);
+                        vMatrix(i, j) = 0;
                         %vMatrix(i,j) = 0; % Stop the motor
                     end
                 end
@@ -244,7 +244,7 @@ classdef TrajectoryGenerator < handle
             xLocal = cross(yLocal, zLocal);
             
             % determine rpy from rotation matrix
-            rMatrix = [xLocal, yLocal, zLocal];
+            rMatrix = [xLocal,  yLocal, zLocal];
         end
     end
 end
