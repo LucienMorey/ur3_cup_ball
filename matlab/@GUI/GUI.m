@@ -288,7 +288,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onFireButton(obj, app, event)
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
-
+            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
             catch
@@ -396,7 +396,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 
                 % make the traj message
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
-
+                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
                 try
                     sendGoalAndWait(obj.actionClient, obj.trajGoal);
                 catch
@@ -417,6 +417,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 [qMatrix, vMatrix, tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix)
+                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
                 try
                     sendGoal(obj.actionClient, obj.trajGoal);
                 catch
