@@ -173,9 +173,9 @@ classdef GUI < matlab.apps.AppBase & handle
                 pose.Pose.Orientation.Z = 0.0;
                 pose.Pose.Orientation.W = 1.0;
 
-                transformedPose = transform(obj.tree, 'base_link', pose);
+                transformedPose = transform(obj.tree, 'world', pose);
                 %create rotation matrix from tranformed quaternion
-                rotm = quat2rotm([transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W]);
+                rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 %add arbitrary height for cup height
