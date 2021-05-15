@@ -41,7 +41,7 @@ classdef TrajectoryGenerator < handle
             obj.reloadLocation = reloadLocation;
         end
         
-        function [qMatrix,vMatrix, tMatrix, xMatrix] = GenerateThrow(obj, velocityVector)
+        function [qMatrix,vMatrix, tMatrix, xMatrix] = GenerateThrow(obj, velocityVector, qInitial)
             qMatrix = [];
             vMatrix = [];
             tMatrix = [];
@@ -59,11 +59,12 @@ classdef TrajectoryGenerator < handle
             % Rotation component is not touched to ensure end-effector stays straight
             pStart = obj.throwPosition + [zeros(3,3), -obj.preThrowDistance * velocityDirection; zeros(1,4)];
             pEnd   = obj.throwPosition + [zeros(3,3), obj.postThrowDistance * velocityDirection; zeros(1,4)]; 
+            pInitial = obj.robot.fkine(qInitial);
             
             % concatinate all points in trajectory
             % five 4x4 transforms
             obj.cartesianWaypoints = zeros(4,4,5);
-            obj.cartesianWaypoints(:,:,1) = obj.reloadLocation;
+            obj.cartesianWaypoints(:,:,1) = pInitial;
             obj.cartesianWaypoints(:,:,2) = pStart;
             obj.cartesianWaypoints(:,:,3) = obj.throwPosition;
             obj.cartesianWaypoints(:,:,4) = pEnd;
@@ -88,11 +89,11 @@ classdef TrajectoryGenerator < handle
             % total path
             obj.cartesianTrajectory = [x, theta];
             xMatrix = x;
-            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(x, theta, trajectoryDeltaT, ones(1,6));
+            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(x, theta, trajectoryDeltaT, qInitial);
         end
 
         % TODO change to take in theta matrix x matrix delta time matrix and joint seed
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, xyz, rpy, dt, initialguess)
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, xyz, rpy, dt, qInitial)
             % Preallocate return arrays  
             qMatrix = zeros(size(xyz, 1), obj.robot.n);
             vMatrix = qMatrix;
@@ -103,13 +104,8 @@ classdef TrajectoryGenerator < handle
                 tMatrix(i) = tMatrix(i-1) + dt(i);
             end
 
-            % get transform of first point
-            %use rpy2tr
-            T =  transl(xyz(1,:)) * rpy2tr(rpy(1, :));
-            marray = [];
-
             % initial joint state
-            qMatrix(1,:) = obj.robot.ikcon(T, initialguess);
+            qMatrix(1,:) = qInitial;
 
             % create joint state traj
             for i = 1:size(qMatrix, 1) - 1
