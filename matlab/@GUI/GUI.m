@@ -21,6 +21,7 @@ classdef GUI < matlab.apps.AppBase & handle
         LAUNCH_VELOCITY_MAGNITUDE = 1.0;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.1;
+        NETWORK_BUFFER_TIME = 1.0;
     end
     
     properties(Access = private)
@@ -77,6 +78,7 @@ classdef GUI < matlab.apps.AppBase & handle
         gamePadSubscriber
         tree;
         cupRobotFrame;
+        robotWorldFrame
         actionClient;
         trajGoal;
         
@@ -93,12 +95,15 @@ classdef GUI < matlab.apps.AppBase & handle
             %GUI Construct an instance of this class
             %   Detailed explanation goes here
             
+            rosinit();
+            obj.tree = rostf;
+            
             obj.guiElementGenerate();
 
             % ROS master address
             %%TODO add ros master address
             % rosinit('192.168.0.253');
-            rosinit();
+            
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
@@ -107,7 +112,6 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
             obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
             obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
-            obj.tree = rostf;
 
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
@@ -151,6 +155,8 @@ classdef GUI < matlab.apps.AppBase & handle
             % make message to send
             % make the traj message
             obj.makeTrajMsg(q, v, t);
+
+            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
 
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
@@ -435,7 +441,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 trajPoint.TimeFromStart = rosduration(t(i,1));
                 obj.trajGoal.Trajectory.Points = [obj.trajGoal.Trajectory.Points; trajPoint];
             end
-            obj.trajGoal.Trajectory.Header.Stamp = rostime('now');
         end
 
         function q = getJointState(obj)
