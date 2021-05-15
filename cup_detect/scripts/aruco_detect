@@ -97,12 +97,7 @@ class ArucoDetect:
   def image_callback(self, msg):
     # try to convert image to cv
     try:
-      cv_image = cv2.flip(cv2.flip(self.cvBridge.imgmsg_to_cv2(msg),1),0)
-
-      # convert image to graysecale
-      # gs_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-      # cv2.imshow('cunt', gs_image)
-      # cv2.waitKey(1)
+      cv_image = self.cvBridge.imgmsg_to_cv2(msg)
       
       # detect markers in vision
       bounding_boxes, ids, _ = cv2.aruco.detectMarkers(cv_image, self.aruco_dict, parameters=self.aruco_param)
