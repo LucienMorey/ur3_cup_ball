@@ -21,6 +21,7 @@ classdef GUI < matlab.apps.AppBase & handle
         LAUNCH_VELOCITY_MAGNITUDE = 1.0;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.1;
+        NETWORK_BUFFER_TIME = 1.0;
     end
     
     properties(Access = private)
@@ -77,6 +78,7 @@ classdef GUI < matlab.apps.AppBase & handle
         gamePadSubscriber
         tree;
         cupRobotFrame;
+        robotWorldFrame
         actionClient;
         trajGoal;
         
@@ -93,12 +95,15 @@ classdef GUI < matlab.apps.AppBase & handle
             %GUI Construct an instance of this class
             %   Detailed explanation goes here
             
+            rosinit();
+            obj.tree = rostf;
+            
             obj.guiElementGenerate();
 
             % ROS master address
             %%TODO add ros master address
             % rosinit('192.168.0.253');
-            rosinit();
+            
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
@@ -107,7 +112,6 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
             obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
             obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
-            obj.tree = rostf;
 
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
@@ -152,6 +156,8 @@ classdef GUI < matlab.apps.AppBase & handle
             % make the traj message
             obj.makeTrajMsg(q, v, t);
 
+            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
+
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
             catch
@@ -173,9 +179,9 @@ classdef GUI < matlab.apps.AppBase & handle
                 pose.Pose.Orientation.Z = 0.0;
                 pose.Pose.Orientation.W = 1.0;
 
-                transformedPose = transform(obj.tree, 'base_link', pose);
+                transformedPose = transform(obj.tree, 'world', pose);
                 %create rotation matrix from tranformed quaternion
-                rotm = quat2rotm([transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z, transformedPose.Pose.Orientation.W]);
+                rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 %add arbitrary height for cup height
@@ -288,7 +294,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onFireButton(obj, app, event)
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
-
+            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
             catch
@@ -396,7 +402,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 
                 % make the traj message
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
-
+                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
                 try
                     sendGoalAndWait(obj.actionClient, obj.trajGoal);
                 catch
@@ -417,6 +423,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 [qMatrix, vMatrix, tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix)
+                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
                 try
                     sendGoal(obj.actionClient, obj.trajGoal);
                 catch
@@ -434,7 +441,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 trajPoint.TimeFromStart = rosduration(t(i,1));
                 obj.trajGoal.Trajectory.Points = [obj.trajGoal.Trajectory.Points; trajPoint];
             end
-            obj.trajGoal.Trajectory.Header.Stamp = rostime('now');
         end
 
         function q = getJointState(obj)
@@ -458,8 +464,35 @@ classdef GUI < matlab.apps.AppBase & handle
             % UR3 subplot
             obj.robotPlot_h = subplot(1, 2, 1);
 
+            success = false;
+            while success == false
+                try
+                    pose = rosmessage('geometry_msgs/PoseStamped');
+                    pose.Header.FrameId = 'base_link';
+                    pose.Pose.Position.X = 0.0;
+                    pose.Pose.Position.Y = 0.0;
+                    pose.Pose.Position.Z = 0.0;
+                    pose.Pose.Orientation.X = 0.0;
+                    pose.Pose.Orientation.Y = 0.0;
+                    pose.Pose.Orientation.Z = 0.0;
+                    pose.Pose.Orientation.W = 1.0;
+
+                    transformedPose = transform(obj.tree, 'world', pose);
+                    %create rotation matrix from tranformed quaternion
+                    rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
+                    %compound rotation matrix and translation into homogenous transform
+                    obj.robotWorldFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                    if obj.robotWorldFrame(1:3,4) ~= [0; 0; 0]
+                        success = true;
+                    end
+                catch
+                    disp('error getting robot transform. will keep retrying')
+                end
+            end
+                
             % create ur3
-            obj.ur3 = UR3m(trotz(pi/2));
+            obj.ur3 = UR3m(obj.robotWorldFrame);
+
 
             % set view properties
             hold(obj.robotPlot_h, 'on');
@@ -469,6 +502,8 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.traj3DLine_h = plot3([0], [0], [0]);
             obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
+            xlim(obj.robotPlot_h, [0, 2]);
+            ylim(obj.robotPlot_h, [-1.2, 0])
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
