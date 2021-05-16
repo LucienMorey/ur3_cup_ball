@@ -9,7 +9,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
     properties(Constant)
         SUBSCIRIBER_TIMEOUT = 0.5;
-        CARTESIAN_JOG_DIST =0.2;
+        CARTESIAN_JOG_DIST =0.05;
         JOINT_JOG_ANGLE = pi/36;
         UR3_JOINT_NAMES = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
         PROJECTILE_MASS = 0.0027;
@@ -50,7 +50,7 @@ classdef GUI < matlab.apps.AppBase & handle
         closeButton
         homeButton
         calcTrajButton
-        fireButton;
+        executeActionButton;
         abortButton;
         exitButton;
         xPlusButton;
@@ -155,19 +155,9 @@ classdef GUI < matlab.apps.AppBase & handle
             qe = zeros(1, 6) - q;
             
             % jjog
-            [q, v, t] = obj.trajectoryGenerator.jjog(q, qe);
+            [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qe);
+            obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
 
-            % make message to send
-            % make the traj message
-            obj.makeTrajMsg(q, v, t);
-
-            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-
-            try
-                sendGoal(obj.actionClient, obj.trajGoal);
-            catch
-                disp('Action sever error');
-            end
         end
 
         function onCalcTrajButton(obj, app, event)
@@ -304,7 +294,7 @@ classdef GUI < matlab.apps.AppBase & handle
             cancelGoal(obj.actionClient);
         end
 
-        function onFireButton(obj, app, event)
+        function onExecuteActionButton(obj, app, event)
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
             obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
             try
@@ -409,17 +399,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
             q = obj.getJointState();
             if ~isempty(q)
-                [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
-                % obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                
-                % make the traj message
-                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
-                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-                try
-                    sendGoalAndWait(obj.actionClient, obj.trajGoal);
-                catch
-                    disp('Action sever error');
-                end
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
+                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
             end
         end
 
@@ -432,15 +413,8 @@ classdef GUI < matlab.apps.AppBase & handle
                 qDesired = zeros(1,size(q,2));
                 qDesired(1,jointNumber) = jogAmount;
 
-                [qMatrix, vMatrix, tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
-                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix)
-                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-                try
-                    sendGoal(obj.actionClient, obj.trajGoal);
-                catch
-                    disp('Action sever error');
-                end
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
+                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
             end
         end
 
@@ -554,9 +528,9 @@ classdef GUI < matlab.apps.AppBase & handle
 
             %BUTTONS
             %create fire button
-            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
+            obj.executeActionButton = uicontrol('String', 'Execute!', 'position', [400 80 100 30]);
             %attach button callback
-            obj.fireButton.Callback = @obj.onFireButton;
+            obj.executeActionButton.Callback = @obj.onExecuteActionButton;
 
             %create Open Servo button
             obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
