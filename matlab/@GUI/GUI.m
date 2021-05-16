@@ -22,6 +22,8 @@ classdef GUI < matlab.apps.AppBase & handle
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
         NETWORK_BUFFER_TIME = 0.5;
+        GROUND_NORMAL = [0, 0, 1];
+        GROUND_POINT = [0, 0, 0];
     end
     
     properties(Access = private)
@@ -156,8 +158,11 @@ classdef GUI < matlab.apps.AppBase & handle
             
             % jjog
             [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qe);
-            obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
             obj.executeActionButton.Enable = 'on';
+            for i=1:1:size(obj.qMatrix,1)
+                obj.ur3.model.animate(obj.qMatrix(i,:));
+                pause(0.01);
+            end
             drawnow();
 
         end
@@ -243,7 +248,19 @@ classdef GUI < matlab.apps.AppBase & handle
                 [obj.robotLine_h.XData, obj.robotLine_h.YData, obj.robotLine_h.ZData] = deal(xMatrix(:,1),xMatrix(:,2), xMatrix(:,3));
                 obj.executeActionButton.Enable = 'on';
                 drawnow();
-                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 50);
+                for i=1:1:size(obj.qMatrix,1)
+                    obj.ur3.model.animate(obj.qMatrix(i,:));
+                    pause(0.01);
+                end;
+
+
+                % Perform collision checking of trajectory
+                collision = checkCollision(obj.ur3, obj.qMatrix, obj.GROUND_POINT, obj.GROUND_NORMAL);
+                if collision
+                    obj.executeActionButton.Enable = 'off';
+                else
+                    obj.executeActionButton.Enable = 'on';
+                end
 
             % catch broken tf tree
             catch
@@ -425,7 +442,10 @@ classdef GUI < matlab.apps.AppBase & handle
             q = obj.getJointState();
             if ~isempty(q)
                 [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
-                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
+                for i=1:1:size(obj.qMatrix,1)
+                    obj.ur3.model.animate(obj.qMatrix(i,:));
+                    pause(0.01);
+                end;
             end
         end
 
@@ -439,7 +459,10 @@ classdef GUI < matlab.apps.AppBase & handle
                 qDesired(1,jointNumber) = jogAmount;
 
                 [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
-                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
+                for i=1:1:size(obj.qMatrix,1)
+                    obj.ur3.model.animate(obj.qMatrix(i,:));
+                    pause(0.01);
+                end;
             end
         end
 
