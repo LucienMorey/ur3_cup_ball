@@ -19,6 +19,7 @@ classdef TrajectoryGenerator < handle
         LINEAR_CART_VEL = 0.1;
         JOINT_JOG_VEL = pi/9;
         JOG_STEPS = 30; % more steps make the movement better
+        maxJointVelocities = [pi, pi, pi, 2*pi, 2*pi, 2*pi];
     end
     
     methods
@@ -150,6 +151,12 @@ classdef TrajectoryGenerator < handle
 
                 % determine joint velocities
                 vMatrix(i,:) = invJ*cartesianVelocity;
+                
+                %scale velocity if going to exceed max velocity
+                [vMax, vMaxIndex] = max(abs(vMatrix(i,:)));
+                if vMax > obj.maxJointVelocities(1,vMaxIndex)
+                    vMatrix(i,:) = ((obj.maxJointVelocities(1,vMaxIndex))/vMax) .*vMatrix(i,:);
+                end
 
                 % check if expected to exceed joint limits
                 for j = 1:obj.robot.n % Loop through joints 1 to 6
