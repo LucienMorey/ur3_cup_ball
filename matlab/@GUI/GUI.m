@@ -577,9 +577,9 @@ classdef GUI < matlab.apps.AppBase & handle
             zlim(obj.robotPlot_h, [-.04, 1]);
             
             %create the environment
-            obj.table_top = Environment(transl(0,0,.001),'table top.PLY');
-            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0,0,0.01),'metal table thing.PLY');
-            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0,'deg'),'cup.PLY')
+            obj.table_top = Environment(transl(0, 0, 0.001),'table top.PLY');
+            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0, 0, 0.005),'metal table thing.PLY');
+            obj.cup = Environment(transl(0, 0, 0) * rpy2tr(0, 0, 0, 'deg'),'cup.PLY')
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
