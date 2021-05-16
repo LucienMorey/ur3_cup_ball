@@ -324,6 +324,30 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.abortButton.Enable = 'on';       
             catch
                 disp('Action sever error');
+                return
+            end
+
+            
+            fired = false;
+            
+            while fired == false
+                try
+                    current_pose = obj.ur3.model.fkine(obj.getJointState());
+                    robot_throw_pose = (obj.robotWorldFrame*obj.LAUNCH_POSITION);
+                    distanceToFirePosition = robot_throw_pose(1:3,4) - current_pose(1:3,4);
+                    
+                    if norm(distanceToFirePosition) < 0.01
+                        % open servo
+                        servoState = rosmessage('std_msgs/Bool');
+                        servoState.Data = true;
+                        send(obj.servoPublisher, servoState);
+                        fired = true;
+                    end
+                    disp(norm(distanceToFirePosition));
+                    
+                catch
+                    disp('subscriber timeout');
+                end
             end
             
         end
