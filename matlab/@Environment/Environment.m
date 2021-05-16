@@ -30,7 +30,7 @@ classdef Environment < handle
             obj.vert_colours = [data.vertex.red, data.vertex.green, data.vertex.blue] / 255;
             
             % Shift mesh
-            obj.shiftMesh();
+            
             
             % add it to a plot
             obj.plot();
@@ -52,7 +52,7 @@ classdef Environment < handle
         function animate(obj)
             % Only plot if the pose is different from the last drawn pose.
             % Otherwise leave it.
-            if ~isequal(obj.pose, obj.oldpose)
+            if ~isequal(obj.pose, obj.old_pose)
                 
                 % transform verticies based on current object pose
                 tvert = [obj.pose * [obj.verts, ones(size(obj.verts, 1), 1)]']';
@@ -62,7 +62,7 @@ classdef Environment < handle
                 drawnow();
                 
                 % update last drawn pose
-                obj.oldpose = obj.pose;
+                obj.old_pose = obj.pose;
             end
         end
         function shiftMesh(obj)

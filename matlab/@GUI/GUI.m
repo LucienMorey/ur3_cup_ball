@@ -85,6 +85,9 @@ classdef GUI < matlab.apps.AppBase & handle
         trajGoal;
         
         ur3;
+        table_top;
+        mounting_plate;
+        cup;
         trajectoryGenerator;
         projectileGenerator;
         qMatrix;
@@ -186,8 +189,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
-                %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
@@ -203,13 +204,18 @@ classdef GUI < matlab.apps.AppBase & handle
             end
 
             try
-                % cup position
-                cup = obj.cupRobotFrame(1:3,4)';
+                                
                 reload = obj.robotWorldFrame * obj.RELOAD_POSITION;
                 launch = obj.robotWorldFrame * obj.LAUNCH_POSITION;
 
                 reload = reload(1:3,4)';
                 launch = launch(1:3,4)';
+                obj.cup.pose = obj.cupRobotFrame;
+                obj.cup.animate();
+
+                %add arbitrary height for cup height
+                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
+                cup = obj.cupRobotFrame(1:3,4)';
 
                 % initial velocity & simulate
                 [vThrow] = obj.projectileGenerator.calcLaunch(launch, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
@@ -282,7 +288,7 @@ classdef GUI < matlab.apps.AppBase & handle
                     disp('jog Z');
                     obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
                 otherwise
-                    disp('penis')
+                    disp('error in joystic')
                 end
 
 %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
@@ -503,7 +509,6 @@ classdef GUI < matlab.apps.AppBase & handle
             % create ur3
             obj.ur3 = UR3m(obj.robotWorldFrame);
 
-
             % set view properties
             hold(obj.robotPlot_h, 'on');
             view(obj.robotPlot_h, 30, 20);
@@ -515,7 +520,13 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.reloadLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
             xlim(obj.robotPlot_h, [0, 2]);
-            ylim(obj.robotPlot_h, [-1.2, 0])
+            ylim(obj.robotPlot_h, [-1.2, 0]);
+            zlim(obj.robotPlot_h, [-.04, 1]);
+            
+            %create the environment
+            obj.table_top = Environment(transl(0,0,.001),'table top.PLY');
+            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0,0,0.01),'metal table thing.PLY');
+            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0,'deg'),'cup.PLY')
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
