@@ -6,10 +6,10 @@ import RPi.GPIO as GPIO
 
 
 if __name__ == "__main__":
-    button_pin = 5
+    button_pin = 17
 
     # start gpio
-    GPIO.setmode(GPIO.BOARD)
+    GPIO.setmode(GPIO.BCM)
 
     # pull down button
     GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -30,5 +30,4 @@ if __name__ == "__main__":
                 msg = Bool()
                 msg.data = button_current
                 estop_pub.publish(msg)
-        button_previous = GPIO.input(button_pin)
-
+        button_previous = button_current
