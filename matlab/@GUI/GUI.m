@@ -9,7 +9,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
     properties(Constant)
         SUBSCIRIBER_TIMEOUT = 0.5;
-        CARTESIAN_JOG_DIST =0.2;
+        CARTESIAN_JOG_DIST =0.05;
         JOINT_JOG_ANGLE = pi/36;
         UR3_JOINT_NAMES = {'shoulder_pan_joint','shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'};
         PROJECTILE_MASS = 0.0027;
@@ -50,7 +50,7 @@ classdef GUI < matlab.apps.AppBase & handle
         closeButton
         homeButton
         calcTrajButton
-        fireButton;
+        executeActionButton;
         abortButton;
         exitButton;
         xPlusButton;
@@ -155,19 +155,9 @@ classdef GUI < matlab.apps.AppBase & handle
             qe = zeros(1, 6) - q;
             
             % jjog
-            [q, v, t] = obj.trajectoryGenerator.jjog(q, qe);
+            [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qe);
+            obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
 
-            % make message to send
-            % make the traj message
-            obj.makeTrajMsg(q, v, t);
-
-            obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-
-            try
-                sendGoal(obj.actionClient, obj.trajGoal);
-            catch
-                disp('Action sever error');
-            end
         end
 
         function onCalcTrajButton(obj, app, event)
@@ -260,55 +250,51 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onGamePad(obj, app, event)
             cls = 0;
-            % try
+            try
                 while cls == 0 %make this close on the clear button
-                %    vz = joy.axis[1];
-                %    vx = joy.axis[2];
-                %    vy = joy.axis[3];
-                %    r  = joy.axis[1];
-                %    p = joy.axis[2];
-                %    y = joy.axis[3];
-                msg = receive(obj.gamePadSubscriber ,obj.SUBSCIRIBER_TIMEOUT);
-                axis_value = (msg.Axes);
-                button_value = (msg.Buttons);
+                    %    vz = joy.axis[1];
+                    %    vx = joy.axis[2];
+                    %    vy = joy.axis[3];
+                    %    r  = joy.axis[1];
+                    %    p = joy.axis[2];
+                    %    y = joy.axis[3];
+                    msg = receive(obj.gamePadSubscriber ,obj.SUBSCIRIBER_TIMEOUT);
+                    axis_value = (msg.Axes);
+                    button_value = (msg.Buttons);
 
-                xyz2rpy = button_value(2); %Left trigger
-                % TODO implement jogging in rpy
-                cls = button_value(9); %Back button will close out of joystick mode
-                
-                [max_axis_value,max_axis_value_index] = max(abs(axis_value));
-                switch max_axis_value_index
-                    case 1
-                    disp('jog X');
-                    obj.cartesianJog([axis_value(max_axis_value_index)/100.0,0, 0]);
-                    case 2
-                    disp('jog Y');
-                    obj.cartesianJog([0,axis_value(max_axis_value_index)/100, 0]);
-                    case 4
-                    disp('jog Z');
-                    obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
-                otherwise
-                    disp('error in joystic')
+                    xyz2rpy = button_value(2); %Left trigger
+                    % TODO implement jogging in rpy
+                    cls = button_value(9); %Back button will close out of joystick mode
+                    
+                    [max_axis_value,max_axis_value_index] = max(abs(axis_value));
+                    switch max_axis_value_index
+                        case 1
+                        disp('jog X');
+                        obj.cartesianJog([axis_value(max_axis_value_index)/100.0,0, 0]);
+                        case 2
+                        disp('jog Y');
+                        obj.cartesianJog([0,axis_value(max_axis_value_index)/100, 0]);
+                        case 4
+                        disp('jog Z');
+                        obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
+                    otherwise
+                        disp('error in joystick')
+                    end
+
+    %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                        %convert to ros traj msg
+    %                 obj.makeTrajMsg(q,v,t);
                 end
-
-%                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                    %convert to ros traj msg
-%                 obj.makeTrajMsg(q,v,t);
-
-                end
-                % send msg
-%                 try
-%                     sendGoal(obj.actionClient, obj.trajGoal);
-%                 catch
-%                     disp('Action sever error');
-%                 end
-            % catch
-            %     disp('fail')
-            % end
-
+            catch
+                disp('fail')
+            end
         end
 
-        function onFireButton(obj, app, event)
+        function onAbortButton(obj, app, event)
+            cancelGoal(obj.actionClient);
+        end
+
+        function onExecuteActionButton(obj, app, event)
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
             obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
             try
@@ -413,17 +399,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
             q = obj.getJointState();
             if ~isempty(q)
-                [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
-                % obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                
-                % make the traj message
-                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
-                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-                try
-                    sendGoalAndWait(obj.actionClient, obj.trajGoal);
-                catch
-                    disp('Action sever error');
-                end
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
+                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
             end
         end
 
@@ -436,15 +413,8 @@ classdef GUI < matlab.apps.AppBase & handle
                 qDesired = zeros(1,size(q,2));
                 qDesired(1,jointNumber) = jogAmount;
 
-                [qMatrix, vMatrix, tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
-                obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                obj.makeTrajMsg(qMatrix, vMatrix, tMatrix)
-                obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
-                try
-                    sendGoal(obj.actionClient, obj.trajGoal);
-                catch
-                    disp('Action sever error');
-                end
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qDesired)
+                obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
             end
         end
 
@@ -558,9 +528,9 @@ classdef GUI < matlab.apps.AppBase & handle
 
             %BUTTONS
             %create fire button
-            obj.fireButton = uicontrol('String', 'Launch!', 'position', [400 80 100 30]);
+            obj.executeActionButton = uicontrol('String', 'Execute!', 'position', [400 80 100 30]);
             %attach button callback
-            obj.fireButton.Callback = @obj.onFireButton;
+            obj.executeActionButton.Callback = @obj.onExecuteActionButton;
 
             %create Open Servo button
             obj.openButton = uicontrol('String', 'Open Servo', 'position', [510 120 100 30]);
@@ -585,7 +555,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create abort button
             obj.abortButton = uicontrol('String', 'Abort', 'position', [620 80 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.abortButton.Callback = @obj.onAbortButton;
 
             %create exit button
             obj.exitButton = uicontrol('String', 'Exit', 'position', [730 120 100 30]);
