@@ -300,6 +300,10 @@ classdef GUI < matlab.apps.AppBase & handle
             end
         end
 
+        function onAbortButton(obj, app, event)
+            cancelGoal(obj.actionClient);
+        end
+
         function onFireButton(obj, app, event)
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
             obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
@@ -577,7 +581,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %create abort button
             obj.abortButton = uicontrol('String', 'Abort', 'position', [620 80 100 30]);
             %attach button callback
-            %CALLBACK
+            obj.abortButton.Callback = @obj.onAbortButton;
 
             %create exit button
             obj.exitButton = uicontrol('String', 'Exit', 'position', [730 120 100 30]);
