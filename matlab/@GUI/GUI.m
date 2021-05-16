@@ -85,8 +85,8 @@ classdef GUI < matlab.apps.AppBase & handle
         trajGoal;
         
         ur3;
-        table;
-        table_mount;
+        table_top;
+        mounting_plate;
         cup;
         trajectoryGenerator;
         projectileGenerator;
@@ -213,6 +213,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 reload = reload(1:3,4)';
                 launch = launch(1:3,4)';
+                cup.pose = obj.cupRobotFrame(1:3,4)';
+                cup.animate;
 
                 % initial velocity & simulate
                 [vThrow] = obj.projectileGenerator.calcLaunch(launch, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
@@ -285,7 +287,7 @@ classdef GUI < matlab.apps.AppBase & handle
                     disp('jog Z');
                     obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
                 otherwise
-                    disp('penis')
+                    disp('error in joystic')
                 end
 
 %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
@@ -505,11 +507,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 
             % create ur3
             obj.ur3 = UR3m(obj.robotWorldFrame);
-            
-            %create environment
-            obj.table = Environment((transl(0,0,0)*rpy2tr(0,0,0, 'deg)),'table top.PLY');
-            obj.table_mount = Environment(transl(0,0,0)*rpy2tr(0,0,0),'metal table thing.PLY');
-            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0),'cup.PLY');
 
             % set view properties
             hold(obj.robotPlot_h, 'on');
@@ -523,7 +520,12 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.robotLine_h = plot3([0],[0], [0]);
             xlim(obj.robotPlot_h, [0, 2]);
             ylim(obj.robotPlot_h, [-1.2, 0]);
-            zlim(obj.robotPlot_h, [-.5, 1]);
+            zlim(obj.robotPlot_h, [-.04, 1]);
+            
+            %create the environment
+            obj.table_top = Environment(transl(0,0,.001),'table top.PLY');
+            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0,0,0.01),'metal table thing.PLY');
+            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0,'deg'),'cup.PLY')
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
