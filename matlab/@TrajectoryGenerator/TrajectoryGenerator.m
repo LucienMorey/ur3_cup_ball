@@ -9,7 +9,7 @@ classdef TrajectoryGenerator < handle
         postThrowDistance;
         reloadLocation;
         cartesianTrajectory;
-        cartesianWaypoints
+        cartesianWaypoints;
     end
 
     properties(Constant)
