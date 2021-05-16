@@ -184,8 +184,6 @@ class ArucoDetect:
           vc_image = self.cameraToPixel(vc)
           vr_image = self.cameraToPixel(vr)
 
-          print(vr)
-
           # draw circle
           cv2.circle(cv_image, (vc_image[0], vc_image[1]), 10, (50, 50, 255), 4)
           cv2.circle(cv_image, (vr_image[0], vr_image[1]), 10, (50, 50, 255), 4)

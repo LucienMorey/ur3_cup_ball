@@ -44,7 +44,7 @@ classdef UR3m < handle
 
             % UR3 joint limits
             L(1).qlim = [-360 360]*pi/180;
-            L(2).qlim = [-360 360]*pi/180;
+            L(2).qlim = [-200 20]*pi/180;
             L(3).qlim = [-360 360]*pi/180;
             L(4).qlim = [-360 360]*pi/180;
             L(5).qlim = [-360 360]*pi/180;

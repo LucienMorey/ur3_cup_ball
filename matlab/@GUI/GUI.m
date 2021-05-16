@@ -16,12 +16,12 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.86;
-        LAUNCH_POSITION = transl([0.25, 0.25, 0.4]);
-        RELOAD_POSITION = transl([0.22,0.18,0.33]);
-        LAUNCH_VELOCITY_MAGNITUDE = 1.0;
+        LAUNCH_POSITION = transl([-0.25, -0.25, 0.45]); % These positions are relative to the robot
+        RELOAD_POSITION = transl([-0.0,-0.3,0.33]);
+        LAUNCH_VELOCITY_MAGNITUDE = 0.1;
         DESIRED_NUMBER_OF_BOUNCES = 1;
-        HEIGHT_OF_CUP = 0.1;
-        NETWORK_BUFFER_TIME = 1.0;
+        HEIGHT_OF_CUP = 0.12;
+        NETWORK_BUFFER_TIME = 0.5;
     end
     
     properties(Access = private)
@@ -34,6 +34,8 @@ classdef GUI < matlab.apps.AppBase & handle
         traj3DLine_h;
         cupLocation2D_h;
         cupLocation3D_h;
+        throwLocation3D_h;
+        reloadLocation3D_h;
         robotLine_h
         
         cupLocationXField
@@ -95,7 +97,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %GUI Construct an instance of this class
             %   Detailed explanation goes here
             
-            rosinit();
+            rosinit('192.168.0.253');
             obj.tree = rostf;
             
             obj.guiElementGenerate();
@@ -116,7 +118,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.LAUNCH_POSITION, 0.25,0.1, obj.RELOAD_POSITION);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.25,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -185,7 +187,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
                 %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.cupRobotFrame(3,4) + obj.HEIGHT_OF_CUP;
+                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
@@ -203,16 +205,22 @@ classdef GUI < matlab.apps.AppBase & handle
             try
                 % cup position
                 cup = obj.cupRobotFrame(1:3,4)';
+                reload = obj.robotWorldFrame * obj.RELOAD_POSITION;
+                launch = obj.robotWorldFrame * obj.LAUNCH_POSITION;
+
+                reload = reload(1:3,4)';
+                launch = launch(1:3,4)';
 
                 % initial velocity & simulate
-                [vThrow] = obj.projectileGenerator.calcLaunch(obj.LAUNCH_POSITION(1:3,4)', obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
-                xyz = obj.projectileGenerator.simulateP(obj.LAUNCH_POSITION(1:3,4)', vThrow, obj.DESIRED_NUMBER_OF_BOUNCES);
+                [vThrow] = obj.projectileGenerator.calcLaunch(launch, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
+                xyz = obj.projectileGenerator.simulateP(launch, vThrow, obj.DESIRED_NUMBER_OF_BOUNCES);
 
                 % 3d plot
                 axes(obj.robotPlot_h)
                 [obj.traj3DLine_h.XData, obj.traj3DLine_h.YData, obj.traj3DLine_h.ZData] = deal(xyz(:, 1), xyz(:, 2), xyz(:, 3));
-                
                 [obj.cupLocation3D_h.XData, obj.cupLocation3D_h.YData, obj.cupLocation3D_h.ZData] = deal(cup(1),cup(2),cup(3));
+                [obj.throwLocation3D_h.XData, obj.throwLocation3D_h.YData, obj.throwLocation3D_h.ZData] = deal(launch(1),launch(2),launch(3));
+                [obj.reloadLocation3D_h.XData, obj.reloadLocation3D_h.YData, obj.reloadLocation3D_h.ZData] = deal(reload(1),reload(2),reload(3));
 
                 % calculate 2d points from 3d ones
                 xPoints = sqrt(xyz(:, 1).^2 + xyz(:, 2).^2);
@@ -228,7 +236,9 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location
-                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow);
+                q = obj.getJointState();
+                [obj.qMatrix, obj.vMatrix, obj.tMatrix, xMatrix] = obj.trajectoryGenerator.GenerateThrow(vThrow, q);
+
                 % calculate trajectory
                 axes(obj.robotPlot_h);
 
@@ -398,7 +408,7 @@ classdef GUI < matlab.apps.AppBase & handle
             q = obj.getJointState();
             if ~isempty(q)
                 [qMatrix,vMatrix,tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
-%                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                % obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
                 
                 % make the traj message
                 obj.makeTrajMsg(qMatrix, vMatrix, tMatrix);
@@ -501,6 +511,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
             obj.traj3DLine_h = plot3([0], [0], [0]);
             obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
+            obj.throwLocation3D_h = plot3([0], [0], [0],'ro');
+            obj.reloadLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
             xlim(obj.robotPlot_h, [0, 2]);
             ylim(obj.robotPlot_h, [-1.2, 0])

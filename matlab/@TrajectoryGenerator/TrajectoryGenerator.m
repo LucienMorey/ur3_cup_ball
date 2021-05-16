@@ -19,6 +19,7 @@ classdef TrajectoryGenerator < handle
         LINEAR_CART_VEL = 0.1;
         JOINT_JOG_VEL = pi/9;
         JOG_STEPS = 30; % more steps make the movement better
+        maxJointVelocities = [pi, pi, pi, 2*pi, 2*pi, 2*pi];
     end
     
     methods
@@ -41,7 +42,7 @@ classdef TrajectoryGenerator < handle
             obj.reloadLocation = reloadLocation;
         end
         
-        function [qMatrix,vMatrix, tMatrix, xMatrix] = GenerateThrow(obj, velocityVector)
+        function [qMatrix,vMatrix, tMatrix, xMatrix] = GenerateThrow(obj, velocityVector, qInitial)
             qMatrix = [];
             vMatrix = [];
             tMatrix = [];
@@ -59,11 +60,12 @@ classdef TrajectoryGenerator < handle
             % Rotation component is not touched to ensure end-effector stays straight
             pStart = obj.throwPosition + [zeros(3,3), -obj.preThrowDistance * velocityDirection; zeros(1,4)];
             pEnd   = obj.throwPosition + [zeros(3,3), obj.postThrowDistance * velocityDirection; zeros(1,4)]; 
+            pInitial = obj.robot.fkine(qInitial);
             
             % concatinate all points in trajectory
             % five 4x4 transforms
             obj.cartesianWaypoints = zeros(4,4,5);
-            obj.cartesianWaypoints(:,:,1) = obj.reloadLocation;
+            obj.cartesianWaypoints(:,:,1) = pInitial;
             obj.cartesianWaypoints(:,:,2) = pStart;
             obj.cartesianWaypoints(:,:,3) = obj.throwPosition;
             obj.cartesianWaypoints(:,:,4) = pEnd;
@@ -88,11 +90,11 @@ classdef TrajectoryGenerator < handle
             % total path
             obj.cartesianTrajectory = [x, theta];
             xMatrix = x;
-            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(x, theta, trajectoryDeltaT, ones(1,6));
+            [qMatrix, vMatrix, tMatrix] = obj.GenerateRMRCSegment(x, theta, trajectoryDeltaT, qInitial);
         end
 
         % TODO change to take in theta matrix x matrix delta time matrix and joint seed
-        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, xyz, rpy, dt, initialguess)
+        function [qMatrix, vMatrix, tMatrix] = GenerateRMRCSegment(obj, xyz, rpy, dt, qInitial)
             % Preallocate return arrays  
             qMatrix = zeros(size(xyz, 1), obj.robot.n);
             vMatrix = qMatrix;
@@ -103,13 +105,8 @@ classdef TrajectoryGenerator < handle
                 tMatrix(i) = tMatrix(i-1) + dt(i);
             end
 
-            % get transform of first point
-            %use rpy2tr
-            T =  transl(xyz(1,:)) * rpy2tr(rpy(1, :));
-            marray = [];
-
             % initial joint state
-            qMatrix(1,:) = obj.robot.ikcon(T, initialguess);
+            qMatrix(1,:) = qInitial;
 
             % create joint state traj
             for i = 1:size(qMatrix, 1) - 1
@@ -137,7 +134,7 @@ classdef TrajectoryGenerator < handle
 
                 % determine the current measure of manipulibility
                 m = sqrt(det(J*J'));
-                marray = [marray; m];
+%                 marray = [marray; m];
                 %m = 0;
 
                 % check if a damped least squares solution is required
@@ -154,6 +151,12 @@ classdef TrajectoryGenerator < handle
 
                 % determine joint velocities
                 vMatrix(i,:) = invJ*cartesianVelocity;
+                
+                %scale velocity if going to exceed max velocity
+                [vMax, vMaxIndex] = max(abs(vMatrix(i,:)));
+                if vMax > obj.maxJointVelocities(1,vMaxIndex)
+                    vMatrix(i,:) = ((obj.maxJointVelocities(1,vMaxIndex))/vMax) .*vMatrix(i,:);
+                end
 
                 % check if expected to exceed joint limits
                 for j = 1:obj.robot.n % Loop through joints 1 to 6
