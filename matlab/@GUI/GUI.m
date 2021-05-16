@@ -260,52 +260,44 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onGamePad(obj, app, event)
             cls = 0;
-            % try
+            try
                 while cls == 0 %make this close on the clear button
-                %    vz = joy.axis[1];
-                %    vx = joy.axis[2];
-                %    vy = joy.axis[3];
-                %    r  = joy.axis[1];
-                %    p = joy.axis[2];
-                %    y = joy.axis[3];
-                msg = receive(obj.gamePadSubscriber ,obj.SUBSCIRIBER_TIMEOUT);
-                axis_value = (msg.Axes);
-                button_value = (msg.Buttons);
+                    %    vz = joy.axis[1];
+                    %    vx = joy.axis[2];
+                    %    vy = joy.axis[3];
+                    %    r  = joy.axis[1];
+                    %    p = joy.axis[2];
+                    %    y = joy.axis[3];
+                    msg = receive(obj.gamePadSubscriber ,obj.SUBSCIRIBER_TIMEOUT);
+                    axis_value = (msg.Axes);
+                    button_value = (msg.Buttons);
 
-                xyz2rpy = button_value(2); %Left trigger
-                % TODO implement jogging in rpy
-                cls = button_value(9); %Back button will close out of joystick mode
-                
-                [max_axis_value,max_axis_value_index] = max(abs(axis_value));
-                switch max_axis_value_index
-                    case 1
-                    disp('jog X');
-                    obj.cartesianJog([axis_value(max_axis_value_index)/100.0,0, 0]);
-                    case 2
-                    disp('jog Y');
-                    obj.cartesianJog([0,axis_value(max_axis_value_index)/100, 0]);
-                    case 4
-                    disp('jog Z');
-                    obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
-                otherwise
-                    disp('error in joystic')
+                    xyz2rpy = button_value(2); %Left trigger
+                    % TODO implement jogging in rpy
+                    cls = button_value(9); %Back button will close out of joystick mode
+                    
+                    [max_axis_value,max_axis_value_index] = max(abs(axis_value));
+                    switch max_axis_value_index
+                        case 1
+                        disp('jog X');
+                        obj.cartesianJog([axis_value(max_axis_value_index)/100.0,0, 0]);
+                        case 2
+                        disp('jog Y');
+                        obj.cartesianJog([0,axis_value(max_axis_value_index)/100, 0]);
+                        case 4
+                        disp('jog Z');
+                        obj.cartesianJog([0,0, -axis_value(max_axis_value_index)/100]);
+                    otherwise
+                        disp('error in joystick')
+                    end
+
+    %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
+                        %convert to ros traj msg
+    %                 obj.makeTrajMsg(q,v,t);
                 end
-
-%                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                    %convert to ros traj msg
-%                 obj.makeTrajMsg(q,v,t);
-
-                end
-                % send msg
-%                 try
-%                     sendGoal(obj.actionClient, obj.trajGoal);
-%                 catch
-%                     disp('Action sever error');
-%                 end
-            % catch
-            %     disp('fail')
-            % end
-
+            catch
+                disp('fail')
+            end
         end
 
         function onFireButton(obj, app, event)
