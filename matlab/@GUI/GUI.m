@@ -189,8 +189,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
                 %compound rotation matrix and translation into homogenous transform
                 obj.cupRobotFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
-                %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
                 % set ui element info
                 obj.cupLocationXField.String = num2str(obj.cupRobotFrame(1,4));
                 obj.cupLocationYField.String = num2str(obj.cupRobotFrame(2,4));
@@ -206,15 +204,18 @@ classdef GUI < matlab.apps.AppBase & handle
             end
 
             try
-                % cup position
-                cup = obj.cupRobotFrame(1:3,4)';
+                                
                 reload = obj.robotWorldFrame * obj.RELOAD_POSITION;
                 launch = obj.robotWorldFrame * obj.LAUNCH_POSITION;
 
                 reload = reload(1:3,4)';
                 launch = launch(1:3,4)';
-                cup.pose = obj.cupRobotFrame(1:3,4)';
-                cup.animate;
+                obj.cup.pose = obj.cupRobotFrame;
+                obj.cup.animate();
+
+                %add arbitrary height for cup height
+                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
+                cup = obj.cupRobotFrame(1:3,4)';
 
                 % initial velocity & simulate
                 [vThrow] = obj.projectileGenerator.calcLaunch(launch, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
