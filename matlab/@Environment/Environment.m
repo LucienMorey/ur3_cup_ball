@@ -30,7 +30,7 @@ classdef Environment < handle
             obj.vert_colours = [data.vertex.red, data.vertex.green, data.vertex.blue] / 255;
             
             % Shift mesh
-            obj.shiftMesh();
+            
             
             % add it to a plot
             obj.plot();
