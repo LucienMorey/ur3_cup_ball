@@ -113,7 +113,7 @@ classdef GUI < matlab.apps.AppBase & handle
             
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
-            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
+            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Bool', @obj.estopCallback);
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
             [obj.actionClient, obj.trajGoal] = rosactionclient('/scaled_pos_joint_traj_controller/follow_joint_trajectory');
             obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
@@ -519,6 +519,69 @@ classdef GUI < matlab.apps.AppBase & handle
             catch
                 q = [];
                 disp('No message received');
+            end
+        end
+
+        function estopCallback(obj, src, msg)
+            if msg.Data == true
+                disp('ESTOP TRIGGERED');
+                % disable all buttons in gui
+                obj.executeActionButton.Enable = 'off';
+                obj.openButton.Enable = 'off';
+                obj.closeButton.Enable = 'off';
+                obj.homeButton.Enable = 'off';
+                obj.calcTrajButton.Enable = 'off';
+                obj.abortButton.Enable = 'off';
+                obj.exitButton.Enable = 'off';
+                obj.xPlusButton.Enable = 'off';
+                obj.xMinusButton.Enable = 'off';
+                obj.zPlusButton.Enable = 'off';
+                obj.zMinusButton.Enable = 'off';
+                obj.yPlusButton.Enable = 'off';
+                obj.yMinusButton.Enable = 'off';
+                obj.gamePadJog.Enable = 'off';
+                obj.q1PlusButton.Enable = 'off';
+                obj.q1MinusButton.Enable = 'off';
+                obj.q2PlusButton.Enable = 'off';
+                obj.q2MinusButton.Enable = 'off';
+                obj.q3PlusButton.Enable = 'off';
+                obj.q3MinusButton.Enable = 'off';
+                obj.q4PlusButton.Enable = 'off';
+                obj.q4MinusButton.Enable = 'off';
+                obj.q5PlusButton.Enable = 'off';
+                obj.q5MinusButton.Enable = 'off';
+                obj.q6PlusButton.Enable = 'off';
+                obj.q6MinusButton.Enable = 'off';
+                % try to cancel traj
+            else
+                disp('ESTOP RELEASED');
+                %enable gui buttons
+                obj.executeActionButton.Enable = 'on';
+                obj.openButton.Enable = 'on';
+                obj.closeButton.Enable = 'on';
+                obj.homeButton.Enable = 'on';
+                obj.calcTrajButton.Enable = 'on';
+                obj.abortButton.Enable = 'on';
+                obj.exitButton.Enable = 'on';
+                obj.xPlusButton.Enable = 'on';
+                obj.xMinusButton.Enable = 'on';
+                obj.zPlusButton.Enable = 'on';
+                obj.zMinusButton.Enable = 'on';
+                obj.yPlusButton.Enable = 'on';
+                obj.yMinusButton.Enable = 'on';
+                obj.gamePadJog.Enable = 'on';
+                obj.q1PlusButton.Enable = 'on';
+                obj.q1MinusButton.Enable = 'on';
+                obj.q2PlusButton.Enable = 'on';
+                obj.q2MinusButton.Enable = 'on';
+                obj.q3PlusButton.Enable = 'on';
+                obj.q3MinusButton.Enable = 'on';
+                obj.q4PlusButton.Enable = 'on';
+                obj.q4MinusButton.Enable = 'on';
+                obj.q5PlusButton.Enable = 'on';
+                obj.q5MinusButton.Enable = 'on';
+                obj.q6PlusButton.Enable = 'on';
+                obj.q6MinusButton.Enable = 'on';
             end
         end
 
