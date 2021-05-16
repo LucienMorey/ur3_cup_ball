@@ -6,7 +6,6 @@
 #servo control
 #!/usr/bin/env python
 import RPi.GPIO as GPIO
-import time
 import rospy
 from std_msgs.msg import Bool
 
@@ -14,22 +13,20 @@ from std_msgs.msg import Bool
 def Move_Servo_Callback(servoPoseCMD):
     print(servoPoseCMD)
     if servoPoseCMD.data  == False: #command to close servo
-        go.ChangeDutyCycle(5)
+        go.ChangeDutyCycle(6.5)
     else: #command to open servo
-        go.ChangeDutyCycle(10)
-
-
+        go.ChangeDutyCycle(11)
     
 if __name__ == "__main__":
 
     servoFrequency = 50 #PWM frequency vlue  of the servo
-    servoPin = 14 #can be any PWM pin on the pi
+    servoPin = 18 #can be any PWM pin on the pi
     GPIO.setmode(GPIO.BCM) #sets the  way the pins are selected
     GPIO.setup(servoPin, GPIO.OUT) #sets the selectedpin as an output
     go = GPIO.PWM(servoPin, servoFrequency) #sets the PWM pin and frequency
 
     #initialising servothe  the closed position
-    go.start(5)
+    go.start(11)
 
     # start ros node
     rospy.init_node('servo_control')
@@ -42,22 +39,3 @@ if __name__ == "__main__":
     while  not rospy.is_shutdown():
         rospy.spin()
     go.stop()
-
-
-
-#Previous code that kinda sucks
-#
-#    if servoPoseCmd =! servoPose: #checks if the servo is  in the comanded position
-#        if servoPose == False: #open motor from closed
-#            go.start(5) #starts the PWM to move the servo. yhe duty cycle for servo is between 5 and 10% @50Hz
-#            time.sleep(0.5) #gives the motor time  to move
-#            go.stop() #stops the PWM signal and the motor
-#            servoPose = True #sets the new position of the motor
-#        else if servoPose == True: #close the motorfrom open
-#            go.start(10)
-#            time.sleep(0.5)
-#            go.stop()
-#            servoPose == False
-#        else:
-#            Print("Error in PWM changes")
-#    else: #do nothing if there is no change

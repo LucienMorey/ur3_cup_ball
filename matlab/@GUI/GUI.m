@@ -270,6 +270,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onGamePad(obj, app, event)
             cls = 0;
+            obj.executeActionButton.Enable = 'off';
+            obj.gamePadJog.Enable = 'off';
             try
                 while cls == 0 %make this close on the clear button
                     %    vz = joy.axis[1];
@@ -301,13 +303,19 @@ classdef GUI < matlab.apps.AppBase & handle
                         disp('error in joystick')
                     end
 
-    %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                        %convert to ros traj msg
-    %                 obj.makeTrajMsg(q,v,t);
+                    obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
+                    obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
+                    try
+                        sendGoalAndWait(obj.actionClient, obj.trajGoal);    
+                    catch
+                        disp('Action sever error');
+                    end
                 end
             catch
                 disp('fail')
             end
+            obj.executeActionButton.Enable = 'on';
+            obj.gamePadJog.Enable = 'on';
         end
 
         function onAbortButton(obj, app, event)
@@ -324,6 +332,30 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.abortButton.Enable = 'on';       
             catch
                 disp('Action sever error');
+                return
+            end
+
+            
+            fired = false;
+            
+            while fired == false
+                try
+                    current_pose = obj.ur3.model.fkine(obj.getJointState());
+                    robot_throw_pose = (obj.robotWorldFrame*obj.LAUNCH_POSITION);
+                    distanceToFirePosition = robot_throw_pose(1:3,4) - current_pose(1:3,4);
+                    
+                    if norm(distanceToFirePosition) < 0.01
+                        % open servo
+                        servoState = rosmessage('std_msgs/Bool');
+                        servoState.Data = true;
+                        send(obj.servoPublisher, servoState);
+                        fired = true;
+                    end
+                    disp(norm(distanceToFirePosition));
+                    
+                catch
+                    disp('subscriber timeout');
+                end
             end
             
         end
@@ -527,6 +559,7 @@ classdef GUI < matlab.apps.AppBase & handle
             end
                 
             % create ur3
+            obj.robotWorldFrame(3,4) = 0.0;
             obj.ur3 = UR3m(obj.robotWorldFrame);
 
             % set view properties
