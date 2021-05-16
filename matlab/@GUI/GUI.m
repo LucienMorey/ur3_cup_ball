@@ -16,8 +16,8 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.86;
-        LAUNCH_POSITION = transl([-0.25, -0.25, 0.45]); % These positions are relative to the robot
-        RELOAD_POSITION = transl([-0.0,-0.3,0.33]);
+        LAUNCH_POSITION = transl([-0.15, -0.15, 0.6]); % These positions are relative to the robot
+        RELOAD_POSITION = transl([-0.0,-0.4,0.4]);
         LAUNCH_VELOCITY_MAGNITUDE = 0.5;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
@@ -113,7 +113,7 @@ classdef GUI < matlab.apps.AppBase & handle
             
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
-            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Header');
+            obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Bool');
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
             [obj.actionClient, obj.trajGoal] = rosactionclient('/scaled_pos_joint_traj_controller/follow_joint_trajectory');
             obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
