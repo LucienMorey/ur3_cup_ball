@@ -20,6 +20,9 @@ classdef TrajectoryGenerator < handle
         JOINT_JOG_VEL = pi/9;
         JOG_STEPS = 30; % more steps make the movement better
         maxJointVelocities = [pi, pi, pi, 2*pi, 2*pi, 2*pi];
+        VEL_FINAL = 0.3;
+        VEL_PRE_THROW = 0.1;
+        VEL_POST_THROW = 0.1;
     end
     
     methods
@@ -78,8 +81,20 @@ classdef TrajectoryGenerator < handle
 
             % For each segment of the trajectory
             for i = 1:size(obj.cartesianWaypoints, 3) - 1
+
+                % find the velocity for this segment
+                if i == 1
+                    vel = velocityMagnitude * obj.VEL_PRE_THROW;
+                elseif i == 3
+                    vel = velocityMagnitude * obj.VEL_POST_THROW;
+                elseif i == 4
+                    vel = velocityMagnitude * obj.VEL_FINAL;
+                else
+                    vel = velocityMagnitude;
+                end
+
                 % get the interpolated segment
-                [x_local,theta_local, t_segment] = obj.interpolateSegment(obj.cartesianWaypoints(:,:,i), obj.cartesianWaypoints(:,:,i+1), velocityMagnitude, obj.STEPS);
+                [x_local,theta_local, t_segment] = obj.interpolateSegment(obj.cartesianWaypoints(:,:,i), obj.cartesianWaypoints(:,:,i+1), vel, obj.STEPS);
 
                 % Add the segments to the total path
                 x = [x; x_local];
