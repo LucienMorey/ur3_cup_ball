@@ -157,6 +157,8 @@ classdef GUI < matlab.apps.AppBase & handle
             % jjog
             [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qe);
             obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 10);
+            obj.executeActionButton.Enable = 'on';
+            drawnow();
 
         end
 
@@ -239,6 +241,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 axes(obj.robotPlot_h);
 
                 [obj.robotLine_h.XData, obj.robotLine_h.YData, obj.robotLine_h.ZData] = deal(xMatrix(:,1),xMatrix(:,2), xMatrix(:,3));
+                obj.executeActionButton.Enable = 'on';
                 drawnow();
                 obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 50);
 
@@ -291,7 +294,8 @@ classdef GUI < matlab.apps.AppBase & handle
         end
 
         function onAbortButton(obj, app, event)
-            cancelGoal(obj.actionClient);
+            cancelGoal(obj.actionClient);  
+            obj.abortButton.Enable = 'off';  
         end
 
         function onExecuteActionButton(obj, app, event)
@@ -299,98 +303,119 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
+                obj.executeActionButton.Enable = 'off';
+                obj.abortButton.Enable = 'on';       
             catch
                 disp('Action sever error');
             end
+            
         end
 
         function onXPlusButton(obj, app, event)
             disp('jog XPlus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([obj.CARTESIAN_JOG_DIST,0, 0]);
         end
 
         function onXMinusButton(obj, app, event)
             disp('jog XMinus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([-obj.CARTESIAN_JOG_DIST,0, 0]);
         end
 
         function onYPlusButton(obj, app, event)
             disp('jog YPlus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([0,obj.CARTESIAN_JOG_DIST, 0]);
         end
 
         function onYMinusButton(obj, app, event)
             disp('jog YMinus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([0,-obj.CARTESIAN_JOG_DIST, 0]);
         end
 
         function onZPlusButton(obj, app, event)
             disp('jog ZPlus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([0,0, obj.CARTESIAN_JOG_DIST]);
         end
 
         function onZMinusButton(obj, app, event)
             disp('jog ZMinus');
+            obj.executeActionButton.Enable = 'on';
             obj.cartesianJog([0,0, -obj.CARTESIAN_JOG_DIST]);
         end
 
         function onQ1PlusButton(obj,event, app)
             disp('jog q1Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(1,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ1MinusButton(obj,event, app)
             disp('jog q1Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(1,-obj.JOINT_JOG_ANGLE);
         end
 
         function onQ2PlusButton(obj,event, app)
             disp('jog q2Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(2,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ2MinusButton(obj,event, app)
             disp('jog q2Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(2,-obj.JOINT_JOG_ANGLE);
         end
 
         function onQ3PlusButton(obj,event, app)
             disp('jog q3Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(3,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ3MinusButton(obj,event, app)
             disp('jog q3Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(3,-obj.JOINT_JOG_ANGLE);
         end
 
         function onQ4PlusButton(obj,event, app)
             disp('jog q4Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(4,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ4MinusButton(obj,event, app)
             disp('jog q4Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(4,-obj.JOINT_JOG_ANGLE);
         end
 
         function onQ5PlusButton(obj,event, app)
             disp('jog q5Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(5,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ5MinusButton(obj,event, app)
             disp('jog q1Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(5,-obj.JOINT_JOG_ANGLE);
         end
 
         function onQ6PlusButton(obj,event, app)
             disp('jog q6Plus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(6,obj.JOINT_JOG_ANGLE);
         end
 
         function onQ6MinusButton(obj,event, app)
             disp('jog q6Minus');
+            obj.executeActionButton.Enable = 'on';
             obj.jointJog(6,-obj.JOINT_JOG_ANGLE);
         end
 
@@ -528,7 +553,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
             %BUTTONS
             %create fire button
-            obj.executeActionButton = uicontrol('String', 'Execute!', 'position', [400 80 100 30]);
+            obj.executeActionButton = uicontrol('String', 'Execute!', 'position', [400 80 100 30], 'Enable', 'off');
             %attach button callback
             obj.executeActionButton.Callback = @obj.onExecuteActionButton;
 
