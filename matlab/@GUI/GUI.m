@@ -270,6 +270,8 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function onGamePad(obj, app, event)
             cls = 0;
+            obj.executeActionButton.Enable = 'off';
+            obj.gamePadJog.Enable = 'off';
             try
                 while cls == 0 %make this close on the clear button
                     %    vz = joy.axis[1];
@@ -301,13 +303,19 @@ classdef GUI < matlab.apps.AppBase & handle
                         disp('error in joystick')
                     end
 
-    %                 obj.ur3.model.plot(qMatrix, 'trail', 'r', 'fps', 10);
-                        %convert to ros traj msg
-    %                 obj.makeTrajMsg(q,v,t);
+                    obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
+                    obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
+                    try
+                        sendGoalAndWait(obj.actionClient, obj.trajGoal);    
+                    catch
+                        disp('Action sever error');
+                    end
                 end
             catch
                 disp('fail')
             end
+            obj.executeActionButton.Enable = 'on';
+            obj.gamePadJog.Enable = 'on';
         end
 
         function onAbortButton(obj, app, event)
@@ -551,6 +559,7 @@ classdef GUI < matlab.apps.AppBase & handle
             end
                 
             % create ur3
+            obj.robotWorldFrame(3,4) = 0.0;
             obj.ur3 = UR3m(obj.robotWorldFrame);
 
             % set view properties
