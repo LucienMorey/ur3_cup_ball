@@ -525,6 +525,8 @@ classdef GUI < matlab.apps.AppBase & handle
         function estopCallback(obj, src, msg)
             if msg.Data == true
                 disp('ESTOP TRIGGERED');
+                cancelAllGoals(obj.actionClient);
+                pause(0.01);
                 % disable all buttons in gui
                 obj.executeActionButton.Enable = 'off';
                 obj.openButton.Enable = 'off';
@@ -532,7 +534,6 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.homeButton.Enable = 'off';
                 obj.calcTrajButton.Enable = 'off';
                 obj.abortButton.Enable = 'off';
-                obj.exitButton.Enable = 'off';
                 obj.xPlusButton.Enable = 'off';
                 obj.xMinusButton.Enable = 'off';
                 obj.zPlusButton.Enable = 'off';
@@ -553,16 +554,17 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.q6PlusButton.Enable = 'off';
                 obj.q6MinusButton.Enable = 'off';
                 % try to cancel traj
+           
+                
+                
+
             else
                 disp('ESTOP RELEASED');
                 %enable gui buttons
-                obj.executeActionButton.Enable = 'on';
                 obj.openButton.Enable = 'on';
                 obj.closeButton.Enable = 'on';
                 obj.homeButton.Enable = 'on';
                 obj.calcTrajButton.Enable = 'on';
-                obj.abortButton.Enable = 'on';
-                obj.exitButton.Enable = 'on';
                 obj.xPlusButton.Enable = 'on';
                 obj.xMinusButton.Enable = 'on';
                 obj.zPlusButton.Enable = 'on';
