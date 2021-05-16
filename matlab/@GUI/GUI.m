@@ -22,6 +22,8 @@ classdef GUI < matlab.apps.AppBase & handle
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
         NETWORK_BUFFER_TIME = 0.5;
+        GROUND_NORMAL = [0, 0, 1];
+        GROUND_POINT = [0, 0, 0];
     end
     
     properties(Access = private)
@@ -244,6 +246,15 @@ classdef GUI < matlab.apps.AppBase & handle
                 obj.executeActionButton.Enable = 'on';
                 drawnow();
                 obj.ur3.model.plot(obj.qMatrix, 'trail', 'r', 'fps', 50);
+
+
+                % Perform collision checking of trajectory
+                collision = checkCollision(obj.ur3, obj.qMatrix, obj.GROUND_POINT, obj.GROUND_NORMAL);
+                if collision
+                    obj.executeActionButton.Enable = 'off';
+                else
+                    obj.executeActionButton.Enable = 'on';
+                end
 
             % catch broken tf tree
             catch
