@@ -18,7 +18,7 @@ classdef GUI < matlab.apps.AppBase & handle
         COEFFICIENT_OF_RESTITUTION = 0.86;
         LAUNCH_POSITION = transl([-0.25, -0.25, 0.45]); % These positions are relative to the robot
         RELOAD_POSITION = transl([-0.0,-0.3,0.33]);
-        LAUNCH_VELOCITY_MAGNITUDE = 0.1;
+        LAUNCH_VELOCITY_MAGNITUDE = 0.5;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
         NETWORK_BUFFER_TIME = 0.5;
@@ -109,7 +109,7 @@ classdef GUI < matlab.apps.AppBase & handle
 
             % ROS master address
             %%TODO add ros master address
-            % rosinit('192.168.0.253');
+            
             
 
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
@@ -519,6 +519,8 @@ classdef GUI < matlab.apps.AppBase & handle
                     if obj.robotWorldFrame(1:3,4) ~= [0; 0; 0]
                         success = true;
                     end
+
+                    obj.robotWorldFrame(3, 4) = 0.0;
                 catch
                     disp('error getting robot transform. will keep retrying')
                 end
@@ -674,12 +676,6 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.q6PlusButton.Callback = @obj.onQ6PlusButton;
             obj.q6MinusButton = uicontrol('String', 'q6-', 'position', [1650 60 100 30]);
             obj.q6MinusButton.Callback = @obj.onQ6MinusButton;
-
-
-
-
-
-
         end
     end
 end
