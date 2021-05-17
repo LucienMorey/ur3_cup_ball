@@ -207,12 +207,13 @@ classdef GUI < matlab.apps.AppBase & handle
 
                 reload = reload(1:3,4)';
                 launch = launch(1:3,4)';
-                obj.cup.pose = obj.cupRobotFrame;
-                obj.cup.animate();
+                
 
                 %add arbitrary height for cup height
-                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP - 0.01;
+                obj.cupRobotFrame(3,4) = obj.HEIGHT_OF_CUP;
                 cup = obj.cupRobotFrame(1:3,4)';
+                obj.cup.pose = obj.cupRobotFrame;
+                obj.cup.animate();
 
                 % initial velocity & simulate
                 [vThrow] = obj.projectileGenerator.calcLaunch(launch, obj.cupRobotFrame(1:3,4)', obj.DESIRED_NUMBER_OF_BOUNCES, obj.LAUNCH_VELOCITY_MAGNITUDE);
@@ -577,9 +578,9 @@ classdef GUI < matlab.apps.AppBase & handle
             zlim(obj.robotPlot_h, [-.04, 1]);
             
             %create the environment
-            obj.table_top = Environment(transl(0,0,.001),'table top.PLY');
-            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0,0,0.01),'metal table thing.PLY');
-            obj.cup = Environment(transl(0,0,0)*rpy2tr(0,0,0,'deg'),'cup.PLY')
+            obj.table_top = Environment(transl(0, 0, 0.001),'table top.PLY');
+            obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0, 0, 0.005),'metal table thing.PLY');
+            obj.cup = Environment(transl(0, 0, 0) * rpy2tr(0, 0, 0, 'deg'),'cup.PLY')
 
             % PLOT 2
             obj.trajPlot_h = subplot(1, 2, 2);
