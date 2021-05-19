@@ -15,10 +15,10 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJECTILE_MASS = 0.0027;
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
-        COEFFICIENT_OF_RESTITUTION = 0.55;
-        LAUNCH_POSITION = transl([-0.2, -0.3, 0.4]); % These positions are relative to the robot
+        COEFFICIENT_OF_RESTITUTION = 0.7;
+        LAUNCH_POSITION = transl([-0.15, -0.3, 0.4]); % These positions are relative to the robot
         RELOAD_POSITION = transl([-0.0,-0.4,0.4]);
-        LAUNCH_VELOCITY_MAGNITUDE = 0.6;
+        LAUNCH_VELOCITY_MAGNITUDE = 0.4;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
         NETWORK_BUFFER_TIME = 0.6;
@@ -123,7 +123,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.4,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.3,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -153,15 +153,18 @@ classdef GUI < matlab.apps.AppBase & handle
             % current pose
             q = obj.getJointState();
 
+            qh = [0, -pi/2, 0, -pi/2, 0, 0]
+
             % error to home pose
-            qe = zeros(1, 6) - q;
+            %qe = zeros(1, 6) - q;
+            qe = qh - q;
             
             % jjog
             [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.jjog(q, qe);
             obj.executeActionButton.Enable = 'on';
             for i=1:1:size(obj.qMatrix,1)
                 obj.ur3.model.animate(obj.qMatrix(i,:));
-                pause(0.01);
+                pause(0.04);
             end
             drawnow();
 
@@ -236,7 +239,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 axes(obj.trajPlot_h);
                 [obj.traj2DLine_h.XData, obj.traj2DLine_h.YData] = deal(xPoints, yPoints);
 
-                [obj.cupLocation2D_h.XData, obj.cupLocation2D_h.YData] = deal(xPoints, yPoints);
+                [obj.cupLocation2D_h.XData, obj.cupLocation2D_h.YData] = deal(cup2dx, cup2dy);
 
                 % SEND CALCULATED TRAJ
                 % using velocity vector and throw location

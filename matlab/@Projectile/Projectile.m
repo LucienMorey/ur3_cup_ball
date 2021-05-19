@@ -45,10 +45,10 @@ classdef Projectile < handle
                 
                 % CASE 1: no bounces - this has very limited range so if the
                 % cup is too far it won't work
-                c = dx - xi(1);
+                c = d - xi(1);
                 q1 = v0^2/ (obj.g*c);
                 q2 = v0^2 * (v0^2 - 2*obj.g*h + 2*obj.g*xi(2)) / (obj.g * c)^2;
-                theta = atan( q1 + sqrt(q2 - 1) );
+                theta = atan( q1 - sqrt(q2 - 1) );
             elseif n == 1
                 
                 % CASE 2: 1 bounce - uses optimisation solver with initial guess
