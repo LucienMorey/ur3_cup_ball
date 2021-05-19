@@ -20,9 +20,9 @@ classdef TrajectoryGenerator < handle
         JOINT_JOG_VEL = pi/9;
         JOG_STEPS = 30; % more steps make the movement better
         maxJointVelocities = [pi, pi, pi, 2*pi, 2*pi, 2*pi];
-        VEL_FINAL = 0.3;
+        VEL_FINAL = 0.2;
         VEL_PRE_THROW = 0.1;
-        VEL_POST_THROW = 0.1;
+        VEL_POST_THROW = 0.8;
     end
     
     methods

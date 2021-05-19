@@ -15,13 +15,13 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJECTILE_MASS = 0.0027;
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
-        COEFFICIENT_OF_RESTITUTION = 0.86;
-        LAUNCH_POSITION = transl([-0.15, -0.15, 0.6]); % These positions are relative to the robot
+        COEFFICIENT_OF_RESTITUTION = 0.55;
+        LAUNCH_POSITION = transl([-0.2, -0.3, 0.4]); % These positions are relative to the robot
         RELOAD_POSITION = transl([-0.0,-0.4,0.4]);
-        LAUNCH_VELOCITY_MAGNITUDE = 0.5;
+        LAUNCH_VELOCITY_MAGNITUDE = 0.6;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
-        NETWORK_BUFFER_TIME = 0.5;
+        NETWORK_BUFFER_TIME = 0.6;
         GROUND_NORMAL = [0, 0, 1];
         GROUND_POINT = [0, 0, 0];
     end
@@ -123,7 +123,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.25,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.4,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -345,7 +345,7 @@ classdef GUI < matlab.apps.AppBase & handle
                     robot_throw_pose = (obj.robotWorldFrame*obj.LAUNCH_POSITION);
                     distanceToFirePosition = robot_throw_pose(1:3,4) - current_pose(1:3,4);
                     
-                    if norm(distanceToFirePosition) < 0.01
+                    if norm(distanceToFirePosition) < 0.025
                         % open servo
                         servoState = rosmessage('std_msgs/Bool');
                         servoState.Data = true;

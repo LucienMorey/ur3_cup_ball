@@ -53,7 +53,7 @@ classdef Projectile < handle
                 
                 % CASE 2: 1 bounce - uses optimisation solver with initial guess
                 for i = 0:4
-                    ig = pi/4 + i*pi/18;
+                    ig = 0 - i*pi/18;
 
                     % calculate throw angle
                     [theta, exitflag] = solveQuad(xi, v0, d, h, obj.cor, ig);
