@@ -24,6 +24,8 @@ classdef GUI < matlab.apps.AppBase & handle
         NETWORK_BUFFER_TIME = 0.6;
         GROUND_NORMAL = [0, 0, 1];
         GROUND_POINT = [0, 0, 0];
+        PRE_THROW_DISTANCE = 0.3;
+        POST_THROW_DISTANCE = 0.1;
     end
     
     properties(Access = private)
@@ -107,11 +109,6 @@ classdef GUI < matlab.apps.AppBase & handle
             
             obj.guiElementGenerate();
 
-            % ROS master address
-            %%TODO add ros master address
-            
-            
-
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Bool');
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
@@ -123,7 +120,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.ur3.model.animate([0, 0, 0, 0, 0, 0]);
             obj.cupRobotFrame = NaN(4);
 
-            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, 0.3,0.1, obj.robotWorldFrame*obj.RELOAD_POSITION);
+            obj.trajectoryGenerator = TrajectoryGenerator(obj.ur3.model, obj.robotWorldFrame*obj.LAUNCH_POSITION, obj.PRE_THROW_DISTANCE, obj.POST_THROW_DISTANCE, obj.robotWorldFrame*obj.RELOAD_POSITION);
             obj.projectileGenerator = Projectile(obj.PROJECTILE_MASS, obj.PROJETILE_DIAMETER, obj.COEFFICENT_OF_DRAG, obj.COEFFICIENT_OF_RESTITUTION);
 
             
@@ -145,6 +142,7 @@ classdef GUI < matlab.apps.AppBase & handle
         end
 
         function onExitButton(obj, app, event)
+            %shutdown ros and delete the gui
             rosshutdown;
             delete(obj.fig);
         end
@@ -204,10 +202,11 @@ classdef GUI < matlab.apps.AppBase & handle
             end
 
             try
-                                
+                % transform relative reloaf and launch pose into world frame                
                 reload = obj.robotWorldFrame * obj.RELOAD_POSITION;
                 launch = obj.robotWorldFrame * obj.LAUNCH_POSITION;
 
+                % extract position from pose
                 reload = reload(1:3,4)';
                 launch = launch(1:3,4)';
                 
@@ -292,7 +291,10 @@ classdef GUI < matlab.apps.AppBase & handle
                     % TODO implement jogging in rpy
                     cls = button_value(9); %Back button will close out of joystick mode
                     
+                    %check for the maximum sjoystick value so robot moves in one direction at a time
                     [max_axis_value,max_axis_value_index] = max(abs(axis_value));
+
+                    %robot will move 10 mm in the desired direction
                     switch max_axis_value_index
                         case 1
                         disp('jog X');
@@ -307,6 +309,7 @@ classdef GUI < matlab.apps.AppBase & handle
                         disp('error in joystick')
                     end
 
+                    %create a ros message and send the trajectory
                     obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
                     obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
                     try
@@ -318,18 +321,22 @@ classdef GUI < matlab.apps.AppBase & handle
             catch
                 disp('fail')
             end
-            obj.executeActionButton.Enable = 'on';
             obj.gamePadJog.Enable = 'on';
         end
 
         function onAbortButton(obj, app, event)
+            %cancel the current action goal and disable the abort button untl another goal is sent
             cancelGoal(obj.actionClient);  
             obj.abortButton.Enable = 'off';  
         end
 
         function onExecuteActionButton(obj, app, event)
+            %convert created trajectory into ros message
             obj.makeTrajMsg(obj.qMatrix, obj.vMatrix, obj.tMatrix);
+            %give message a current time stamp with a slight buffer for network delay
             obj.trajGoal.Trajectory.Header.Stamp = rostime('now') + rosduration(obj.NETWORK_BUFFER_TIME);
+            %try to send an action goal
+            %this will also disable the  execute action button until another trajectory has been calculated
             try
                 sendGoal(obj.actionClient, obj.trajGoal);
                 obj.executeActionButton.Enable = 'off';
@@ -340,14 +347,16 @@ classdef GUI < matlab.apps.AppBase & handle
             end
 
             
+            %try to fire the servo
             fired = false;
-            
             while fired == false
+                %try to get the current joint state and determine the distance to the launch position
                 try
                     current_pose = obj.ur3.model.fkine(obj.getJointState());
                     robot_throw_pose = (obj.robotWorldFrame*obj.LAUNCH_POSITION);
                     distanceToFirePosition = robot_throw_pose(1:3,4) - current_pose(1:3,4);
                     
+                    %if the end effector is within 25mm of launch position then throw the ball
                     if norm(distanceToFirePosition) < 0.025
                         % open servo
                         servoState = rosmessage('std_msgs/Bool');
@@ -475,7 +484,9 @@ classdef GUI < matlab.apps.AppBase & handle
         function cartesianJog(obj, direction)
             axes(obj.robotPlot_h);
 
+            % get the current joint state and then jog from the current state in the desired direction
             q = obj.getJointState();
+            % only jog if the current joint state was sucessfully obtained
             if ~isempty(q)
                 [obj.qMatrix, obj.vMatrix, obj.tMatrix] = obj.trajectoryGenerator.cjog(q, direction);
                 for i=1:1:size(obj.qMatrix,1)
@@ -488,7 +499,10 @@ classdef GUI < matlab.apps.AppBase & handle
         function jointJog(obj, jointNumber, jogAmount)
             axes(obj.robotPlot_h);
 
+            % get the current joint state and then jog from the current state in the desired direction
             q = obj.getJointState();
+
+            % only jog if the current joint state could be obtained
             if ~isempty(q)
 
                 qDesired = zeros(1,size(q,2));
@@ -503,6 +517,7 @@ classdef GUI < matlab.apps.AppBase & handle
         end
 
         function makeTrajMsg(obj, q, v, t)
+            %empty the current trajectory points array and refill it with new data
             obj.trajGoal.Trajectory.Points = [];
             for i=1:1:size(q,1)
                 trajPoint = rosmessage('trajectory_msgs/JointTrajectoryPoint');
@@ -515,10 +530,11 @@ classdef GUI < matlab.apps.AppBase & handle
 
         function q = getJointState(obj)
             try
+                %get the latest joint state message
                 msg = receive(obj.jointStateSubscriber,obj.SUBSCIRIBER_TIMEOUT);
                 q321456 = (msg.Position)';
 
-                % Note the default order of the joints is 3,2,1,4,5,6
+                % Note the default order of the joints is 3,2,1,4,5,6 and needs to be rearranged
                 q = [q321456(1,3:-1:1), q321456(1,4:6)];
             catch
                 q = [];
@@ -529,12 +545,14 @@ classdef GUI < matlab.apps.AppBase & handle
         function guiElementGenerate(obj)
             %PLOT 1
             obj.fig = figure('units','normalized','outerposition',[0 0 1 1]);
+            %attatch close button callback to close gui as well so ros is always shutdown
             obj.fig.CloseRequestFcn = @obj.onExitButton;
             
             % UR3 subplot
             obj.robotPlot_h = subplot(1, 2, 1);
 
             success = false;
+            %block ntil the robot can be plotted sucessfully
             while success == false
                 try
                     pose = rosmessage('geometry_msgs/PoseStamped');
@@ -552,10 +570,12 @@ classdef GUI < matlab.apps.AppBase & handle
                     rotm = quat2rotm([transformedPose.Pose.Orientation.W, transformedPose.Pose.Orientation.X, transformedPose.Pose.Orientation.Y, transformedPose.Pose.Orientation.Z]);
                     %compound rotation matrix and translation into homogenous transform
                     obj.robotWorldFrame = [rotm, [transformedPose.Pose.Position.X; transformedPose.Pose.Position.Y; transformedPose.Pose.Position.Z]; zeros(1,3), 1];
+                    % first transform is always 0 translation so wait until a better result is recieved
                     if obj.robotWorldFrame(1:3,4) ~= [0; 0; 0]
                         success = true;
                     end
 
+                    % set robot Z distance to 0 because it is known to be on the table
                     obj.robotWorldFrame(3, 4) = 0.0;
                 catch
                     disp('error getting robot transform. will keep retrying')
@@ -571,6 +591,7 @@ classdef GUI < matlab.apps.AppBase & handle
             view(obj.robotPlot_h, 30, 20);
             daspect(obj.robotPlot_h,[1 1 1]);
 
+            % create empty plots for all lines  so be adjusted once new data comes in
             obj.traj3DLine_h = plot3([0], [0], [0]);
             obj.cupLocation3D_h = plot3([0], [0], [0],'ro');
             obj.throwLocation3D_h = plot3([0], [0], [0],'ro');
