@@ -19,3 +19,29 @@ NOTE: The GUI will not complete startup unless the cup detect node is running an
 NOTE: without the ur_ros_driver running the robot will not respond to published actions.
 
 NOTE: The robot may perform a safety stop during operation. THsi will not clear the trajectory and the robot will try to continue moving once the driver is resumed. the safest course of action is to stop the driver and reload from scratch.
+
+## Sensors and COntrol Video
+
+https://www.youtube.com/watch?v=W9oAOd8Ru0Q
+
+## Contributions
+
+Contribution to Code:
+Nicholas Polivis - 33%
+Jesse McNamara - 33%
+Lucien Morey - 33%
+
+Contribution to Robotics Video 1:
+Nicholas Polivis - 33%
+Jesse McNamara - 33%
+Lucien Morey - 33%
+
+Contribution to Robotics Video 2:
+Nicholas Polivis - 33%
+Jesse McNamara - 33%
+Lucien Morey - 33%
+
+Contribution to Sensors and Control Video:
+Nicholas Polivis - 33%
+Jesse McNamara - 33%
+Lucien Morey - 33%
