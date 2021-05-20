@@ -20,7 +20,9 @@ NOTE: without the ur_ros_driver running the robot will not respond to published 
 
 NOTE: The robot may perform a safety stop during operation. THsi will not clear the trajectory and the robot will try to continue moving once the driver is resumed. the safest course of action is to stop the driver and reload from scratch.
 
-## Sensors and COntrol Video
+## Sensors and Control Video
+
+The attatched video contains a recorded demonstration of the UR3 making a shot and is followed up by the group quickly describing the process and hardware used in the project.
 
 https://www.youtube.com/watch?v=W9oAOd8Ru0Q
 
