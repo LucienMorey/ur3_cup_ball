@@ -60,7 +60,3 @@ if __name__ == "__main__":
 #Right Stick
 #Axis 2 = Left -1 to Right +1
 #Axis 3 = Top -1 to Bottom +1
-
-#class JoyStick:
-#    define for i in range (joystick_count)
-#!/usr/bin/env python#!/usr/bin/env python
