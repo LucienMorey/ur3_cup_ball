@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import rospy
+import actionlib
+
+import control_msgs.msg as control_msgs
+
+import trajectory_msgs.msg as trajectory_msgs
+
+from math import pi
+
+if __name__ == '__main__':
+    rospy.init_node("node")
+
+    client = actionlib.SimpleActionClient("/arm_controller/follow_joint_trajectory", control_msgs.FollowJointTrajectoryAction)
+
+    action = control_msgs.FollowJointTrajectoryGoal()
+
+    action.trajectory.joint_names = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
+
+    action.trajectory.header.seq = 1;
+    action.trajectory.header.stamp = rospy.Time.now()
+    action.goal_time_tolerance = rospy.Duration(0.5)
+
+
+    bufferSeconds = 1 # % This allows for the time taken to send the message. If the network is fast, this could be reduced.
+    durationSeconds = 5; # % This is how many seconds the movement will take
+
+    startJointSend = trajectory_msgs.JointTrajectoryPoint()
+    startJointSend.positions = [0,0,0,0,0,0]
+    startJointSend.time_from_start = rospy.Duration(0)    
+      
+    endJointSend = trajectory_msgs.JointTrajectoryPoint()
+    nextJointState_123456 = [pi/2,0,0,0,0,0]
+    endJointSend.positions = nextJointState_123456
+    endJointSend.time_from_start = rospy.Duration(durationSeconds)
+
+    action.trajectory.points = [startJointSend, endJointSend]
+    
+    client.wait_for_server()
+    print('peen')
+    client.send_goal(action)
+
