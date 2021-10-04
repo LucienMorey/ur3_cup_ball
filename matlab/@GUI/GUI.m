@@ -104,7 +104,7 @@ classdef GUI < matlab.apps.AppBase & handle
             %GUI Construct an instance of this class
             %   Detailed explanation goes here
             
-            rosinit('192.168.0.253');
+            rosinit();
             obj.tree = rostf;
             
             obj.guiElementGenerate();
@@ -112,7 +112,7 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.servoPublisher = rospublisher('servo_closed_state', 'std_msgs/Bool', 'IsLatching', false);
             obj.estopSubscriber = rossubscriber('estop', 'std_msgs/Bool');
             obj.jointStateSubscriber = rossubscriber('joint_states', 'sensor_msgs/JointState');
-            [obj.actionClient, obj.trajGoal] = rosactionclient('/scaled_pos_joint_traj_controller/follow_joint_trajectory');
+            [obj.actionClient, obj.trajGoal] = rosactionclient('/arm_controller/follow_joint_trajectory');
             obj.gamePadSubscriber = rossubscriber('joystick', 'sensor_msgs/Joy');
             obj.trajGoal.Trajectory.JointNames = obj.UR3_JOINT_NAMES;
             obj.trajGoal.GoalTimeTolerance = rosduration(0.05);
@@ -201,7 +201,7 @@ classdef GUI < matlab.apps.AppBase & handle
                 return
             end
 
-            try
+%             try
                 % transform relative reloaf and launch pose into world frame                
                 reload = obj.robotWorldFrame * obj.RELOAD_POSITION;
                 launch = obj.robotWorldFrame * obj.LAUNCH_POSITION;
@@ -266,9 +266,9 @@ classdef GUI < matlab.apps.AppBase & handle
                 end
 
             % catch broken tf tree
-            catch
-                disp('unable to calculate and plot trajectory');
-            end
+%             catch
+%                 disp('unable to calculate and plot trajectory');
+%             end
         end
 
         function onGamePad(obj, app, event)
