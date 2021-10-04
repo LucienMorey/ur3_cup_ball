@@ -20,7 +20,7 @@ class ArucoDetect:
     self.cvBridge = CvBridge()
 
     #create  camera_subscriber
-    self.image_sub = rospy.Subscriber('/image', Image, self.image_callback)
+    self.image_sub = rospy.Subscriber('/rrbot/camera1/image_raw', Image, self.image_callback)
 
     # create tfBroadcaster
     self.tfBroadcaster = TransformBroadcaster()
@@ -105,7 +105,7 @@ class ArucoDetect:
       # publish image with detected markers for debugging
       cv2.aruco.drawDetectedMarkers(cv_image, bounding_boxes)
 
-      # check if the required AR Tags can be seen once
+      # # check if the required AR Tags can be seen once
       important_bounding_boxes = self.checkArucoPresent(ids, bounding_boxes)
 
       if np.size(important_bounding_boxes) > 0:
@@ -153,18 +153,18 @@ class ArucoDetect:
           v = cup_p1 - cup_p2
 
           # empty vec
-          vc = np.empty(3)
+          self.vc = np.empty(3)
 
           # rotate v by 45 degrees
-          vc[0] = v[0]*cos(pi/4) - v[1]*sin(pi/4)
-          vc[1] = v[0]*sin(pi/4) + v[1]*cos(pi/4)
-          vc[2] = 0
+          self.vc[0] = v[0]*cos(pi/4) - v[1]*sin(pi/4)
+          self.vc[1] = v[0]*sin(pi/4) + v[1]*cos(pi/4)
+          self.vc[2] = 0
 
           # scale vector (its a isosceles triangle so pythag gives 1/sqrt(2)
-          vc = vc / sqrt(2)
+          self.vc = self.vc / sqrt(2)
 
           # shift it back from origin to where it should be
-          vc = vc + cup_p2
+          self.vc = self.vc + cup_p2
 
           # HANDLE ROBOT AR TAGS
           # vec from tag2->tag1
@@ -177,12 +177,12 @@ class ArucoDetect:
           ks = (0.315 + l) / l 
 
           # apply scaling factor, and shift from origin
-          vr = v * ks + robot_p2
-          vr[2] = robot_p2[2]
+          self.vr = v * ks + robot_p2
+          self.vr[2] = robot_p2[2]
 
           # convert to pixel coords for drawing circle
-          vc_image = self.cameraToPixel(vc)
-          vr_image = self.cameraToPixel(vr)
+          vc_image = self.cameraToPixel(self.vc)
+          vr_image = self.cameraToPixel(self.vr)
 
           # draw circle
           cv2.circle(cv_image, (vc_image[0], vc_image[1]), 10, (50, 50, 255), 4)
@@ -195,8 +195,8 @@ class ArucoDetect:
           print('failed to convert cv2 image to ros message')
 
 
-        self.sendTransform(msg.header.frame_id, 'base_link', vr, np.array([0, pi, 0]))
-        self.sendTransform(msg.header.frame_id, 'cup', vc, np.array([pi, 0, 0]))
+        self.sendTransform(msg.header.frame_id, 'base_link', self.vr, np.array([0, pi, 0]))
+        self.sendTransform(msg.header.frame_id, 'cup', self.vc, np.array([pi, 0, 0]))
 
        
     except Exception as e:

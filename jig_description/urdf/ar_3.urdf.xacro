@@ -4,7 +4,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://jig_description/meshes/cup_jig.dae"/>
+        <mesh filename="package://jig_description/meshes/ar_3.dae"/>
         <!-- <box size="1 1 1"/> -->
       </geometry>
       <!-- <material>

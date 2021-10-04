@@ -38,7 +38,7 @@
     </node>
 
     <!-- broadcast transform from cup_ar to cup -->
-    <node pkg="tf" type="static_transform_publisher" name="world_broadcaster" args="0.94 -0.65 2 1.0 0.0 0.0 0.0 world head_camera 33" />
+    <node pkg="tf" type="static_transform_publisher" name="world_broadcaster" args="0.94 -0.65 2 1.0 0.0 0.0 0.0 world camera_link 33" />
 
 
     <!-- broadcast transform from robot_ar to robot -->

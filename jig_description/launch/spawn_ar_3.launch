@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+      <!--Robot Description from URDF-->
+  <param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
+  <param name="use_gui" value="true"/>
+
+  <!--Nodes-->
+  <node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 " output="screen"/>
+
+</launch>
