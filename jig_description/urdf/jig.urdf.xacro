@@ -5,40 +5,19 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://jig_description/meshes/cup_jig.dae"/>
-        <!-- <box size="1 1 1"/> -->
       </geometry>
-      <!-- <material>
-        <uri>package://materials/scripts</uri>
-        <uri>package://materials/textures</uri>
-        <name>jig/example</name>
-      </material> -->
     </visual>
+
+    <collision>  
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://jig_description/meshes/cup_jig.stl"/>
+      </geometry>      
+    </collision>
+
     <inertial>
       <mass value="1" />
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
     </inertial>
   </link>
-  <!-- <gazebo reference="jig_base_link">
-    <material>example</material>
-  </gazebo> -->
-  <!-- <joint name="base_ar1" type="fixed">
-    <parent link="jig_base_link"/>
-    <child link="aq1"/>
-    <origin xyz="0 0 0.1"/>
-  </joint>
-  <link name="jig_base_link">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://jig_description/meshes/base_plate.stl"/>
-      </geometry>
-      <material name="LightGrey">
-        <color rgba="0.7 0.7 0.7 1.0"/>
-      </material>
-    </visual>
-    <inertial>
-      <mass value="1" />
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
-    </inertial>
-  </link> -->
 </robot>
