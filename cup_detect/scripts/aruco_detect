@@ -46,6 +46,9 @@ class ArucoDetect:
     self.cam_matrix_1080 = np.array([[  1997.44065,    0.,          938.99262],[   0.,          1996.92577,  572.39607],[   0.,            0.,            1.,        ]])
     self.dist_480 = np.array([[  0.09345,   -0.09263,   -0.00033,   0.00435,  0.00000]])
 
+    self.cam_matrix_sim = np.array([[  476.7030836014194, 0.0, 400.5],[   0.0, 476.7030836014194, 400.5],[   0.,            0.,            1.,        ]])
+    self.dist_sim = np.array([[  0.0,   -0.0,   -0.000,   0.00,  0.00000]])
+
     self.cam_matrix_480 = np.array([[  658.02788,    0.,          328.23101],[   0.,          657.60186,  256.33508],[   0.,            0.,            1.,        ]])
     self.dist_1080 = np.array([[  -0.08224,   2.96513,   -0.00730,   -0.00196,  0.00000]])
 
@@ -74,8 +77,8 @@ class ArucoDetect:
     return important_bounding_boxes
 
   def cameraToPixel(self, p):
-    u = int(self.cam_matrix_1080[0][0] * p[0]/p[2] + self.cam_matrix_1080[0][2])
-    v = int(self.cam_matrix_1080[1][1] * p[1]/p[2] + self.cam_matrix_1080[1][2])
+    u = int(self.cam_matrix_sim[0][0] * p[0]/p[2] + self.cam_matrix_sim[0][2])
+    v = int(self.cam_matrix_sim[1][1] * p[1]/p[2] + self.cam_matrix_sim[1][2])
     return np.array([u, v])
 
   def sendTransform(self, parent_id, child_id, t, r):
@@ -110,7 +113,7 @@ class ArucoDetect:
 
       if np.size(important_bounding_boxes) > 0:
         # Get da marker posishons
-        [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, self.marker_size, self.cam_matrix_1080, self.dist_1080)
+        [rvecs, tvecs] = cv2.aruco.estimatePoseSingleMarkers(important_bounding_boxes, self.marker_size, self.cam_matrix_sim, self.dist_sim)
 
         # get da posishons
         robot_tvec_1 = tvecs[0]
