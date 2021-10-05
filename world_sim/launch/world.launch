@@ -24,7 +24,17 @@
   </include>
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
-  <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 0.0 -x -0.854838" respawn="false" output="screen" />
+  <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 0.0 -x -0.854838 -Y 3.141 " respawn="false" output="screen" />
+
+  <param name="ar_2_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_2.urdf.xacro"/>
+
+  <!--Nodes-->
+  <node name="spawn_ar_2_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_2_description -model ar_2 -x -0.5 -y -0.03 -Y  1.57075" output="screen"/>
+
+  <param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
+
+  <!--Nodes-->
+  <node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -x 0.5 -y 0.03 -Y  -1.57075" output="screen"/>
 
   <include file="$(find ur_gazebo)/launch/controller_utils.launch"/>
 
