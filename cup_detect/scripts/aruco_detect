@@ -33,7 +33,7 @@ class ArucoDetect:
     self.robot_list_2 = np.empty([1,3])
 
     #load aruco marker dictionary
-    self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_100)
+    self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_1000)
     # this value should match the last value in the dictionary if predefined.
     # otherwise if a custom size is used generate a new dictionary
     #this unit is in metres
@@ -197,8 +197,7 @@ class ArucoDetect:
         except CvBridgeError:
           print('failed to convert cv2 image to ros message')
 
-
-        self.sendTransform(msg.header.frame_id, 'base_link', self.vr, np.array([0, pi, 0]))
+        self.sendTransform(msg.header.frame_id, 'base_link', self.vr, np.array([0, pi, -pi/2]))
         self.sendTransform(msg.header.frame_id, 'cup', self.vc, np.array([pi, 0, 0]))
 
        
