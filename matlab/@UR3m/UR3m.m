@@ -14,7 +14,7 @@ classdef UR3m < handle
         % path is the path to ply files
         function obj = UR3m(base)
 
-            obj.workspace = [-0.3 2 -0.5 0.5 0 1];
+            obj.workspace = [-1 1 -0.5 0.5 0 1];
 
             % define DH parameters and create serial link
             obj.GetRobot();

@@ -597,12 +597,12 @@ classdef GUI < matlab.apps.AppBase & handle
             obj.throwLocation3D_h = plot3([0], [0], [0],'ro');
             obj.reloadLocation3D_h = plot3([0], [0], [0],'ro');
             obj.robotLine_h = plot3([0],[0], [0]);
-            xlim(obj.robotPlot_h, [0, 2]);
-            ylim(obj.robotPlot_h, [-1.2, 0]);
+            xlim(obj.robotPlot_h, [-1.5, 1]);
+            ylim(obj.robotPlot_h, [-1, 1]);
             zlim(obj.robotPlot_h, [-.04, 1]);
             
             %create the environment
-            obj.table_top = Environment(transl(0, 0, 0.001),'table top.PLY');
+            obj.table_top = Environment(transl(-1.1, 0.55, 0.001),'table top.PLY');
             obj.mounting_plate = Environment(obj.robotWorldFrame*transl(0, 0, 0.005),'metal table thing.PLY');
             obj.cup = Environment(transl(0, 0, 0) * rpy2tr(0, 0, 0, 'deg'),'cup.PLY')
 
