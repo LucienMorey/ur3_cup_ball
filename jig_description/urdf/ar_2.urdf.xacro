@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="jig">
-  <link name="jig_base_link">
-    
+  <link name="jig_base_link"> 
+
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -22,4 +22,5 @@
     </inertial>
   
   </link>
+
 </robot>
