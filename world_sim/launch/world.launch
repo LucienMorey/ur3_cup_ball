@@ -2,48 +2,62 @@
   <arg name="limited" default="false" doc="If true, limits joint range [-PI, PI] on all joints." />
   <arg name="paused" default="true" doc="Starts gazebo in paused mode" />
   <arg name="gui" default="true" doc="Starts gazebo gui" />
+
+
   <!--Gazebo empty world launch file-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     	<arg name="world_name" value="$(find world_sim)/worlds/control.world"/>
-      <arg name="paused" value="$(arg paused)"/>
+      <arg name="paused" value="true"/> 
       <arg name="gui" value="$(arg gui)"/>
   </include>
 
-  <!--Robot Description from URDF-->
-  <param name="camera_description" command="$(find xacro)/xacro $(find world_sim)/urdf/camera.xacro"/>
-  <param name="use_gui" value="true"/>
 
-  <!--Nodes-->
-  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param camera_description -model camera " output="screen"/>
+<!-- Start Up Camera -->
+<param name="camera_description" command="$(find xacro)/xacro $(find world_sim)/camera_urdf/camera.xacro"/>
+<param name="use_gui" value="true"/>
 
-  <include file="$(find jig_description)/launch/spawn_jig.launch" />
+<node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param camera_description -model camera " output="screen"/>
 
-  <!-- send robot urdf to param server -->
-  <include file="$(find ur_description)/launch/ur3_upload.launch">
+
+<!-- Start Up Objects -->
+
+<node name="table_spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+args="-file $(find world_sim)/models/table/table.sdf -sdf -x 0 -y 0 -z 0  -R 0 -P 0 -Y 0 -model table"/>
+
+
+<param name="jig_description" command="$(find xacro)/xacro $(find jig_description)/urdf/jig.urdf.xacro"/>
+<node name="spawn_jig_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param jig_description -model jig -z 1.015 -x 0 -y 0 " output="screen"/>
+
+
+<param name="ar_2_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_2.urdf.xacro"/>
+<node name="spawn_ar_2_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_2_description -model ar_2 -z 1.02 -x -0.3 -y -0.03 -Y  1.57075" output="screen"/>
+
+<param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
+<node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -z 1.02 -x 0.7 -y 0.03 -Y  -1.57075" output="screen"/>
+
+
+<!-- UR3 Robot Start Up-->
+<include file="$(find ur_description)/launch/ur3_upload.launch">
     <arg name="limited" value="$(arg limited)"/>
-  </include>
+</include>
 
-  <!-- push robot_description to factory and spawn robot in gazebo -->
-  <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 0.0 -x -0.854838 -Y 3.141 " respawn="false" output="screen" />
+<node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -z 1.015 -x -0.654838 -Y 3.141 " respawn="false" output="screen" />
+  
 
-  <param name="ar_2_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_2.urdf.xacro"/>
+<!-- Controllers Start Up -->  
 
-  <!--Nodes-->
-  <node name="spawn_ar_2_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_2_description -model ar_2 -x -0.5 -y -0.03 -Y  1.57075" output="screen"/>
+<include file="$(find ur_gazebo)/launch/controller_utils.launch"/>
 
-  <param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
 
-  <!--Nodes-->
-  <node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -x 0.5 -y 0.03 -Y  -1.57075" output="screen"/>
+<rosparam file="$(find ur_gazebo)/controller/arm_controller_ur3.yaml" command="load"/>
+<node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
 
-  <include file="$(find ur_gazebo)/launch/controller_utils.launch"/>
 
-  <!-- start this controller -->
-  <rosparam file="$(find ur_gazebo)/controller/arm_controller_ur3.yaml" command="load"/>
-  <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
+<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="load joint_group_position_controller" />
 
-  <!-- load other controllers -->
-  <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="load joint_group_position_controller" />
 
+<!-- Cup Detection Start Up-->
+
+<include file="$(find cup_detect)/launch/aruco_cup_detect.launch" />
 
 </launch>

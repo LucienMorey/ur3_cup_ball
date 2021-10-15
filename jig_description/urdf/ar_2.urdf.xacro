@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="jig">
-  <link name="jig_base_link"> 
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ar_2">
+  <link name="ar_2__link"> 
 
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -10,16 +10,17 @@
     </visual>
     
     <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://jig_description/meshes/ar.stl" scale="1.0"/>
+        <mesh filename="package://jig_description/meshes/ar_2.dae"/>
       </geometry>
     </collision>
     
     <inertial>
       <mass value="1" />
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+      <inertia ixx="0.01" ixy="-0.00" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
     </inertial>
+  
   
   </link>
 

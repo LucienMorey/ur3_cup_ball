@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ball_gripper">
+
+  <link name="gripper_base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.065"/>
+      <geometry>
+        <mesh filename="package://world_sim/models/Gripper/meshes/ball_gripper.dae"/>
+      </geometry>
+    </visual>
+
+    <collision>  
+      <origin rpy="0 0 0" xyz="0 0 0.065"/>
+      <geometry>
+        <mesh filename="package://world_sim/models/Gripper/meshes/ball_gripper.dae"/>
+      </geometry>      
+    </collision>
+
+    <inertial>
+      <mass value="0.125" />
+      <inertia ixx="0.01" ixy="-0.00" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial>
+  </link>
+
+</robot>

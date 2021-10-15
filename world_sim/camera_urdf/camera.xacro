@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="camera">
+
+  <xacro:include filename="$(find world_sim)/camera_urdf/camera.plugins.xacro" />
+
+  <xacro:property name="camera_size" value="0.02"/>
+  <xacro:property name="camera_origin_x" value="0"/>
+  <xacro:property name="camera_origin_y" value="0"/>
+  <xacro:property name="camera_origin_z" value="2.015"/>
+  <xacro:property name="camera_link" value="0.05" /> <!-- Size of square 'camera' box -->
+  <link name="world"/>
+  <!--Camera-->
+  <joint name="camera_joint" type="fixed">
+    <axis xyz="0 0 0" />
+    <origin xyz="${camera_origin_x} ${camera_origin_y} ${camera_origin_z}" rpy="0 1.57079 0"/>
+    <parent link="world"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <!-- Camera -->
+  <link name="camera_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+    <box size="${camera_link} ${camera_link} ${camera_link}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+    <box size="${camera_link} ${camera_link} ${camera_link}"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+
+</robot>

@@ -1,0 +1,35 @@
+<launch>
+  <arg name="limited" default="false" doc="If true, limits joint range [-PI, PI] on all joints." />
+  <arg name="paused" default="true" doc="Starts gazebo in paused mode" />
+  <arg name="gui" default="true" doc="Starts gazebo gui" />
+
+
+  <!--Gazebo empty world launch file-->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    	<arg name="world_name" value="$(find world_sim)/worlds/control.world"/>
+      <arg name="paused" value="$(arg paused)"/>
+      <arg name="gui" value="$(arg gui)"/>
+  </include>
+
+
+
+<node name="table_spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+args="-file $(find world_sim)/models/table/table.sdf -sdf -x 0 -y 0 -z 0  -R 0 -P 0 -Y 0 -model table"/>
+
+
+<param name="jig_description" command="$(find xacro)/xacro $(find jig_description)/urdf/jig.urdf.xacro"/>
+<node name="spawn_jig_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param jig_description -model jig -z 1.015 -x 0 -y 0 " output="screen"/>
+
+
+<param name="ar_2_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_2.urdf.xacro"/>
+<node name="spawn_ar_2_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_2_description -model ar_2 -z 1.02 -x -0.3 -y -0.03 -Y  1.57075" output="screen"/>
+
+<param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
+<node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -z 1.02 -x 0.7 -y 0.03 -Y  -1.57075" output="screen"/>
+
+
+<param name="gripper_description" command="$(find xacro)/xacro $(find world_sim)/models/Gripper/urdf/ball_gripper.urdf.xacro"/>
+<node name="spawn_cup_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param gripper_description -model gripper -z 0 -x 0.0 -y 0.0 " output="screen"/>
+
+
+</launch>
