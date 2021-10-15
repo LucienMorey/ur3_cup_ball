@@ -2,3 +2,7 @@
 	path = ros_control
 	url = https://github.com/GeorgeSheslow/ros_control
 	branch = melodic-devel
+[submodule "universal_robot"]
+	path = universal_robot
+	url = git@github.com:LucienMorey/universal_robot.git
+	branch = melodic-devel
