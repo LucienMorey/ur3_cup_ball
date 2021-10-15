@@ -35,20 +35,21 @@ classdef UR3m < handle
         function GetRobot(obj)
 
             % UR3 DH parameters
-            % 0 -> d -> a -> alpha
+            % 0 -> d -> a -> alpha          
             L(1) = Link([0    0.172    0       -pi/2   0]);
             L(2) = Link([0    0.1235   0.249    0      0]);
             L(3) = Link([0   -0.1      0.2185   0      0]);
             L(4) = Link([0    0.091     0       -pi/2   0]);
             L(5) = Link([0    0.0915    0        pi/2   0]);
-            L(6) = Link([0    0.0785    0        0	   0]);
-
+            L(6) = Link([0    0.0785*2    0        0	   0]);
+            
+            
             % UR3 joint limits
             L(1).qlim = [-360 360]*pi/180;
             L(2).qlim = [-200 20]*pi/180;
             L(3).qlim = [-360 360]*pi/180;
-            L(4).qlim = [-360 360]*pi/180;
-            L(5).qlim = [-360 360]*pi/180;
+            L(4).qlim = [-180 0]*pi/180;
+            L(5).qlim = [45 180]*pi/180;
             L(6).qlim = [-360 360]*pi/180;
             
             % offsets

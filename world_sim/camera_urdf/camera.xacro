@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="camera">
 
-  <xacro:include filename="$(find world_sim)/urdf/camera.plugins.xacro" />
+  <xacro:include filename="$(find world_sim)/camera_urdf/camera.plugins.xacro" />
 
   <xacro:property name="camera_size" value="0.02"/>
   <xacro:property name="camera_origin_x" value="0"/>
   <xacro:property name="camera_origin_y" value="0"/>
-  <xacro:property name="camera_origin_z" value="1"/>
+  <xacro:property name="camera_origin_z" value="2.015"/>
   <xacro:property name="camera_link" value="0.05" /> <!-- Size of square 'camera' box -->
   <link name="world"/>
   <!--Camera-->
