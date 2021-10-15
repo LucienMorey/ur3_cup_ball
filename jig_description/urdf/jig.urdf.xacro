@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="jig">
+
   <link name="jig_base_link">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -20,4 +21,37 @@
       <inertia ixx="0.01" ixy="-0.00" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
     </inertial>
   </link>
+
+    <joint name="cup_joint" type="fixed">
+      <parent link="jig_base_link"/>
+      <child link="cup_link"/>
+      <axis xyz="0 0 0"/>
+      <origin rpy="0 0.0 0.0" xyz="0.05490451627 0.03060114443 0.0"/>
+    </joint>
+
+
+  <link name="cup_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://jig_description/meshes/cup.dae"/>
+      </geometry>
+    </visual>
+
+    <collision>  
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://jig_description/meshes/cup.dae"/>
+      </geometry>      
+    </collision>
+
+    <inertial>
+      <mass value="0.125" />
+      <inertia ixx="0.01" ixy="-0.00" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial>
+  </link>
+
+
+
+
 </robot>

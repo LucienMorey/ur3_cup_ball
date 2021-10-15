@@ -12,14 +12,24 @@
   </include>
 
 
-<param name="ur3_description" command="$(find xacro)/xacro $(find ur3_description)/urdf/ur3_robot.urdf.xacro"/>
-<node name="spawn_robot_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ur3_description -model ur3 -z 1.015 -x 0.0 -y 0.0 " output="screen"/>
+
+<node name="table_spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+args="-file $(find world_sim)/models/table/table.sdf -sdf -x 0 -y 0 -z 0  -R 0 -P 0 -Y 0 -model table"/>
 
 
+<param name="jig_description" command="$(find xacro)/xacro $(find jig_description)/urdf/jig.urdf.xacro"/>
+<node name="spawn_jig_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param jig_description -model jig -z 1.015 -x 0 -y 0 " output="screen"/>
 
-<param name="robot_description" command="$(find xacro)/xacro $(find ur3_description)/urdf/ur3_robotiq85_gripper.urdf.xacro"/>
-<node name="spawn_robot_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model gripper -z 1.015 -x 0.0 -y 0.0 " output="screen"/>
 
+<param name="ar_2_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_2.urdf.xacro"/>
+<node name="spawn_ar_2_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_2_description -model ar_2 -z 1.02 -x -0.3 -y -0.03 -Y  1.57075" output="screen"/>
+
+<param name="ar_3_description" command="$(find xacro)/xacro $(find jig_description)/urdf/ar_3.urdf.xacro"/>
+<node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -z 1.02 -x 0.7 -y 0.03 -Y  -1.57075" output="screen"/>
+
+
+<param name="gripper_description" command="$(find xacro)/xacro $(find world_sim)/models/Gripper/urdf/ball_gripper.urdf.xacro"/>
+<node name="spawn_cup_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param gripper_description -model gripper -z 0 -x 0.0 -y 0.0 " output="screen"/>
 
 
 </launch>
