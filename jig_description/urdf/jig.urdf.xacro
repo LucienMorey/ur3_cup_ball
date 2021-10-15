@@ -40,7 +40,7 @@
     <collision>  
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://jig_description/meshes/cup.stl"/>
+        <mesh filename="package://jig_description/meshes/cup.dae"/>
       </geometry>      
     </collision>
 
