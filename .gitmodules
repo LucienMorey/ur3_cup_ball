@@ -6,3 +6,6 @@
 	path = ros_control
 	url = https://github.com/GeorgeSheslow/ros_control
 	branch = melodic-devel
+[submodule "ros_robotiq_urcap_control"]
+	path = ros_robotiq_urcap_control
+	url = https://github.com/GeorgeSheslow/ros_robotiq_urcap_control
