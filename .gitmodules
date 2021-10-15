@@ -1,6 +1,8 @@
 [submodule "robotiq"]
 	path = robotiq
 	url = https://github.com/GeorgeSheslow/robotiq
+	branch = melodic-devel
 [submodule "ros_control"]
 	path = ros_control
 	url = https://github.com/GeorgeSheslow/ros_control
+	branch = melodic-devel
