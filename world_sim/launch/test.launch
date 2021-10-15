@@ -28,7 +28,7 @@ args="-file $(find world_sim)/models/table/table.sdf -sdf -x 0 -y 0 -z 0  -R 0 -
 <node name="spawn_ar_3_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param ar_3_description -model ar_3 -z 1.02 -x 0.7 -y 0.03 -Y  -1.57075" output="screen"/>
 
 
-<param name="gripper_description" command="$(find xacro)/xacro $(find world_sim)/models/Gripper/urdf/ball_gripper.urdf.xacro"/>
+<param name="gripper_description" command="$(find xacro)/xacro $(find world_sim)/models/Gripper/urdf/gripper.urdf.xacro"/>
 <node name="spawn_cup_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param gripper_description -model gripper -z 0 -x 0.0 -y 0.0 " output="screen"/>
 
 
