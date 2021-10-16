@@ -16,9 +16,9 @@ classdef GUI < matlab.apps.AppBase & handle
         PROJETILE_DIAMETER = 0.04;
         COEFFICENT_OF_DRAG = 0;
         COEFFICIENT_OF_RESTITUTION = 0.7;
-        LAUNCH_POSITION = transl([-0.15, -0.3, 0.4]); % These positions are relative to the robot
-        RELOAD_POSITION = transl([-0.0,-0.4,0.4]);
-        LAUNCH_VELOCITY_MAGNITUDE = 0.4;
+        LAUNCH_POSITION = transl([-0.15, 0.3, 0.4]); % These positions are relative to the robot
+        RELOAD_POSITION = transl([-0.0,0.4,0.4]);
+        LAUNCH_VELOCITY_MAGNITUDE = 1;
         DESIRED_NUMBER_OF_BOUNCES = 1;
         HEIGHT_OF_CUP = 0.12;
         NETWORK_BUFFER_TIME = 0.6;
