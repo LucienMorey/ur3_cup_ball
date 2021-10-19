@@ -29,9 +29,9 @@ https://www.youtube.com/watch?v=W9oAOd8Ru0Q
 ## Contributions
 
 Contribution to Code:
-Nicholas Polivis - 33%
-Jesse McNamara - 33%
-Lucien Morey - 33%
+Nicholas Polivis - 25%
+Jesse McNamara - 25%
+Lucien Morey - 25%
 
 Contribution to Robotics Video 1:
 Nicholas Polivis - 33%
@@ -47,3 +47,7 @@ Contribution to Sensors and Control Video:
 Nicholas Polivis - 33%
 Jesse McNamara - 33%
 Lucien Morey - 33%
+
+Contribution to Control for Mechatronic Systems:
+Lucien Morey - 50%
+George - 50%
