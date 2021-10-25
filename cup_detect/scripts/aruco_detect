@@ -177,7 +177,7 @@ class ArucoDetect:
           l = np.linalg.norm(v)
 
           # scaling factor from 2->robot
-          ks = (0.315 + l) / l 
+          ks = (0.354838 + l) / l 
 
           # apply scaling factor, and shift from origin
           self.vr = v * ks + robot_p2
