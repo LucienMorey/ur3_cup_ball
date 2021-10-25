@@ -53,7 +53,7 @@ args="-file $(find world_sim)/models/table/table.sdf -sdf -x 0 -y 0 -z 0  -R 0 -
 <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
 
 
-<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="load joint_group_position_controller" />
+<!-- <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="load joint_group_position_controller" /> -->
 
 
 <!-- Cup Detection Start Up-->
