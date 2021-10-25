@@ -15,13 +15,14 @@
 ## Control For Mx Systems Startup Instructions
 
 1. Create catkin workspace
-2. Link or copy the cup_detect, jig_description, matlab, ros_control, universal_robot and world sim directories to your catkin workspace
-3. Build the full workspace. catkin build from catkin_tools was used for this project
-4. Launch the world.launch file from world_sim with ```roslaunch world_sim world.launch``` This was start gazebo with all the models and the cup detection code
-5. Unpause the gazebo simultaion to start the physics engine and start the camera sensor
-6. Start the main.m file through MATLAB from the matlab directory
-7. Move the cup to the desired position with gazebo and then use the matlab gui to calculate trajectories with the calc traj button and then send them to the robot with the execute button.
-8. (Optional) Use the suite of RQT tools to either view the bounding_image topic to inspect where the cup is belived to be based on camera data or use the dynamic reconfigure tool to tune PID gains for each joint within the arm controller.
+2. Clone down this repository and initialise git submodules to obtain our forks of the ros_control and universal_robot repositories.
+3. Link or copy the cup_detect, jig_description, matlab, ros_control, universal_robot and world sim directories to your catkin workspace
+4. Build the full workspace. catkin build from catkin_tools was used for this project
+5. Launch the world.launch file from world_sim with ```roslaunch world_sim world.launch``` This was start gazebo with all the models and the cup detection code
+6. Unpause the gazebo simultaion to start the physics engine and start the camera sensor
+7. Start the main.m file through MATLAB from the matlab directory
+8. Move the cup to the desired position with gazebo and then use the matlab gui to calculate trajectories with the calc traj button and then send them to the robot with the execute button.
+9. (Optional) Use the suite of RQT tools to either view the bounding_image topic to inspect where the cup is belived to be based on camera data or use the dynamic reconfigure tool to tune PID gains for each joint within the arm controller.
 
 ## Requirements
  
