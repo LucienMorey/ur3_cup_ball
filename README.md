@@ -18,7 +18,7 @@
 2. Clone down this repository and initialise git submodules to obtain our forks of the ros_control and universal_robot repositories.
 3. Link or copy the cup_detect, jig_description, matlab, ros_control, universal_robot and world sim directories to your catkin workspace
 4. Build the full workspace. catkin build from catkin_tools was used for this project
-5. Launch the world.launch file from world_sim with ```roslaunch world_sim world.launch``` This was start gazebo with all the models and the cup detection code
+5. Launch the world.launch file from world_sim with ```roslaunch world_sim world.launch``` This will start gazebo with all the models and the cup detection code
 6. Unpause the gazebo simultaion to start the physics engine and start the camera sensor
 7. Start the main.m file through MATLAB from the matlab directory
 8. Move the cup to the desired position with gazebo and then use the matlab gui to calculate trajectories with the calc traj button and then send them to the robot with the execute button.
